@@ -11,7 +11,6 @@ import {
   audioTrackToggled,
   selectAudioTracks,
 } from "@/app/store/slices/audio-slice";
-import { trimChanged } from "@/app/store/slices/trim-slice";
 import type { AppDispatch } from "@/app/store/store";
 import {
   analyzeFilterPreviewLoudness,
@@ -22,7 +21,7 @@ import { audioFiltersRequireLoudnessAnalysis } from "@/domain/audio-processing";
 
 import { listenerMiddleware } from "../listener-middleware";
 
-// Coalesces bursts such as consecutive trim edits into one measurement.
+// Coalesces consecutive filter edits into one measurement.
 const ANALYSIS_DEBOUNCE_MS = 300;
 
 /*
@@ -37,7 +36,6 @@ listenerMiddleware.startListening({
     audioTrackToggled,
     editingInstanceActivated,
     sourceReady,
-    trimChanged,
     workspaceHistoryTransitionCommitted,
   ),
   effect: async (action, { cancelActiveListeners, delay, dispatch, getState }) => {
@@ -67,7 +65,6 @@ listenerMiddleware.startListening({
   matcher: isAnyOf(
     audioFilterPreviewStarted,
     audioFilterPreviewChanged,
-    trimChanged,
     workspaceHistoryTransitionCommitted,
   ),
   effect: async (action, { cancelActiveListeners, delay, dispatch, getState }) => {

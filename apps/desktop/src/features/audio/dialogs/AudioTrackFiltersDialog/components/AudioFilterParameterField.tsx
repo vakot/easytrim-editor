@@ -1,9 +1,5 @@
-import { useId, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group";
-import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
 
 import {
   type AudioFilter,
@@ -16,6 +12,8 @@ import {
 import { useAudioFiltersDraft } from "../contexts/audio-filters-draft-context";
 import type { AudioFilterField } from "../lib/audio-filter-fields";
 
+import { AudioParameterSliderInput } from "./AudioParameterSliderInput";
+
 function formatValue(value: number): string {
   return Number.isFinite(value) ? String(Number(value.toFixed(3))) : "";
 }
@@ -24,7 +22,7 @@ function parseValue(text: string): number {
   return text.trim() ? Number(text.replace(",", ".")) : Number.NaN;
 }
 
-/** One explicit filter parameter: a slider over its practical span and an exact numeric input. */
+/** Connects one filter parameter to the shared slider and exact-value input. */
 function AudioFilterParameterField({
   field,
   filter,
@@ -33,7 +31,6 @@ function AudioFilterParameterField({
   filter: AudioFilter;
 }) {
   const { t } = useTranslation();
-  const id = useId();
   const { dispatch } = useAudioFiltersDraft();
   // The typed text while editing, so partial input such as "-" stays visible.
   const [text, setText] = useState<string | null>(null);
@@ -41,59 +38,63 @@ function AudioFilterParameterField({
   const value = audioFilterParameterValue(filter, field.parameter);
   const valid = isAudioFilterParameterValid(filter.type, field.parameter, value);
   const label = field.label(t);
-  const errorId = `${id}-error`;
+  const defaultValue = field.defaultValue;
 
   const update = (next: number) =>
     dispatch({ filter: { ...filter, [field.parameter]: next } as AudioFilter, type: "updated" });
 
+  const sliderValue = Number.isFinite(value)
+    ? Math.min(range.max, Math.max(range.min, value))
+    : range.min;
+
+  const markers = [
+    { label: `${formatValue(range.min)} ${field.unit}`, value: range.min },
+    ...(defaultValue === undefined
+      ? []
+      : [{ label: `${formatValue(defaultValue)} ${field.unit}`, value: defaultValue }]),
+    { label: `${formatValue(range.max)} ${field.unit}`, value: range.max },
+  ];
+
   return (
-    <div className="grid" data-slot="audio-filter-parameter">
-      <Label htmlFor={id}>{label}</Label>
-      <div className="flex items-center gap-3">
-        <Slider
-          aria-label={label}
-          aria-valuetext={`${formatValue(value)} ${field.unit}`}
-          className="flex-1"
-          max={field.slider.max}
-          min={field.slider.min}
-          onValueChange={([next]) => {
-            if (next === undefined) return;
-            setText(null);
-            update(next);
-          }}
-          step={field.step}
-          value={[
-            Number.isFinite(value)
-              ? Math.min(field.slider.max, Math.max(field.slider.min, value))
-              : field.slider.min,
-          ]}
-        />
-        <InputGroup className="w-32 shrink-0">
-          <InputGroupInput
-            aria-describedby={valid ? undefined : errorId}
-            aria-invalid={!valid}
-            id={id}
-            inputMode="decimal"
-            onBlur={() => setText(null)}
-            onChange={(event) => {
-              setText(event.target.value);
-              update(parseValue(event.target.value));
-            }}
-            value={text ?? formatValue(value)}
-          />
-          <InputGroupAddon align="inline-end">{field.unit}</InputGroupAddon>
-        </InputGroup>
-      </div>
-      {valid ? null : (
-        <p className="text-xs text-destructive" id={errorId}>
-          {t("audio.filters.parameterRange", {
-            max: formatValue(range.max),
-            min: formatValue(range.min),
-            unit: field.unit,
-          })}
-        </p>
-      )}
-    </div>
+    <AudioParameterSliderInput
+      error={
+        valid
+          ? undefined
+          : t("audio.filters.parameterRange", {
+              max: formatValue(range.max),
+              min: formatValue(range.min),
+              unit: field.unit,
+            })
+      }
+      inputMode="decimal"
+      inputUnit={field.unit}
+      inputValue={text ?? formatValue(value)}
+      invalid={!valid}
+      label={label}
+      markers={markers}
+      onDoubleClick={
+        defaultValue === undefined
+          ? undefined
+          : () => {
+              setText(null);
+              update(defaultValue);
+            }
+      }
+      onInputBlur={() => setText(null)}
+      onInputChange={(nextText) => {
+        setText(nextText);
+        update(parseValue(nextText));
+      }}
+      onSliderChange={(next) => {
+        setText(null);
+        update(next);
+      }}
+      sliderMax={range.max}
+      sliderMin={range.min}
+      sliderStep={field.step}
+      sliderValue={sliderValue}
+      sliderValueText={`${formatValue(value)} ${field.unit}`}
+    />
   );
 }
 

@@ -40,10 +40,6 @@ impl CompiledChain {
         &self.stages
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.stages.is_empty()
-    }
-
     /// The execution strategy required by the complete ordered chain.
     pub fn strategy(&self) -> ExecutionStrategy {
         ExecutionStrategy::for_stages(self.stages.iter().map(|stage| stage.memory))
@@ -67,12 +63,6 @@ impl CompiledChain {
             Some(stages) => format!("{CANONICAL_INPUT_STAGE},{stages}"),
             None => CANONICAL_INPUT_STAGE.to_owned(),
         }
-    }
-
-    /// The canonical graph, or `None` for an empty chain whose source signal can pass through an
-    /// export unchanged at its original rate.
-    pub fn processing_graph(&self) -> Option<String> {
-        (!self.is_empty()).then(|| self.canonical_graph())
     }
 }
 
@@ -317,7 +307,7 @@ mod tests {
         assert!(
             compile_chain(&[disabled(gain("g", 6.0))], &[])
                 .unwrap()
-                .processing_graph()
+                .stage_graph()
                 .is_none()
         );
         // Disabled instances are still validated, so they can be enabled again unchanged.
@@ -346,13 +336,16 @@ mod tests {
     }
 
     #[test]
-    fn processing_graph_aligns_and_resamples_before_the_first_filter() {
+    fn canonical_graph_aligns_and_resamples_before_the_first_filter() {
         let chain = compile_chain(&[high_pass("hp", 80.0)], &[]).unwrap();
         assert_eq!(
-            chain.processing_graph().unwrap(),
+            chain.canonical_graph(),
             format!("{CANONICAL_INPUT_STAGE},highpass=f=80")
         );
-        assert_eq!(compile_chain(&[], &[]).unwrap().processing_graph(), None);
+        assert_eq!(
+            compile_chain(&[], &[]).unwrap().canonical_graph(),
+            CANONICAL_INPUT_STAGE
+        );
     }
 
     #[test]

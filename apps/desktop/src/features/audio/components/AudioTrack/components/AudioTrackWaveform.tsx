@@ -5,6 +5,7 @@ import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { type AudioTrackState, waveformDisplayFailed } from "@/app/store/slices/audio-slice";
 import { selectSourceLoadToken } from "@/app/store/slices/source-slice";
 import { usePrimaryColor } from "@/app/theme/useTheme";
+import { type AudioSyncOffset, effectiveAudioOffsetMicros } from "@/domain/audio-processing";
 import { cn } from "@/lib/class-names.utils";
 import type { AudioStream } from "@/lib/tauri/media.types";
 
@@ -15,17 +16,30 @@ import { AudioTrackWaveformStatus } from "./AudioTrackWaveformStatus";
 interface AudioTrackWaveformProps {
   displayMode: WaveformDisplayMode;
   stream: AudioStream;
+  syncOffset?: AudioSyncOffset | null;
+  timelineDurationMicros?: number;
   track: AudioTrackState;
   volume: number;
 }
 
-function AudioTrackWaveform({ displayMode, stream, track, volume }: AudioTrackWaveformProps) {
+function AudioTrackWaveform({
+  displayMode,
+  stream,
+  syncOffset,
+  timelineDurationMicros = stream.durationMicros ?? 0,
+  track,
+  volume,
+}: AudioTrackWaveformProps) {
   const loadToken = useAppSelector(selectSourceLoadToken);
   return (
     <AudioTrackWaveformCanvas
       displayMode={displayMode}
       key={`${loadToken}:${stream.streamIndex}`}
       stream={stream}
+      syncOffsetMicros={effectiveAudioOffsetMicros(
+        syncOffset === undefined ? track.processing.syncOffset : (syncOffset ?? undefined),
+      )}
+      timelineDurationMicros={timelineDurationMicros}
       volume={volume}
       waveform={track.waveform}
     />
@@ -49,16 +63,22 @@ const MIN_DISPLAY_VOLUME = 1e-4;
 interface WaveformVisualState {
   color: [number, number, number];
   gainDb: number;
+  waveformStartPercent: number;
+  waveformWidthPercent: number;
 }
 
 function AudioTrackWaveformCanvas({
   displayMode,
   stream,
+  syncOffsetMicros,
+  timelineDurationMicros,
   volume,
   waveform,
 }: {
   displayMode: WaveformDisplayMode;
   stream: AudioStream;
+  syncOffsetMicros: number;
+  timelineDurationMicros: number;
   volume: number;
   waveform: AudioTrackState["waveform"];
 }) {
@@ -123,11 +143,17 @@ function AudioTrackWaveformCanvas({
       : 1 - Math.exp(-elapsed / ANIMATION_TIME_CONSTANT_MS);
 
     current.gainDb += (next.gainDb - current.gainDb) * progress;
+    current.waveformStartPercent +=
+      (next.waveformStartPercent - current.waveformStartPercent) * progress;
+    current.waveformWidthPercent +=
+      (next.waveformWidthPercent - current.waveformWidthPercent) * progress;
     current.color = current.color.map(
       (channel, index) => channel + ((next.color[index] ?? channel) - channel) * progress,
     ) as WaveformVisualState["color"];
     const settled =
       Math.abs(next.gainDb - current.gainDb) < 0.01 &&
+      Math.abs(next.waveformStartPercent - current.waveformStartPercent) < 0.001 &&
+      Math.abs(next.waveformWidthPercent - current.waveformWidthPercent) < 0.001 &&
       current.color.every(
         (channel, index) => Math.abs(channel - (next.color[index] ?? channel)) < 1,
       );
@@ -176,9 +202,31 @@ function AudioTrackWaveformCanvas({
     targetRef.current = {
       color: parseHexColor(primaryColor),
       gainDb: 20 * Math.log10(Math.max(volume, MIN_DISPLAY_VOLUME)),
+      waveformStartPercent:
+        timelineDurationMicros > 0
+          ? (((stream.startTimeMicros ?? 0) + syncOffsetMicros) / timelineDurationMicros) * 100
+          : 0,
+      waveformWidthPercent:
+        timelineDurationMicros > 0
+          ? (Math.max(0, stream.durationMicros ?? timelineDurationMicros) /
+              timelineDurationMicros) *
+            100
+          : 0,
     };
     updateAnimation();
-  }, [draw, primaryColor, reducedMotion, tick, updateAnimation, volume, waveform]);
+  }, [
+    draw,
+    primaryColor,
+    reducedMotion,
+    syncOffsetMicros,
+    stream.durationMicros,
+    stream.startTimeMicros,
+    tick,
+    timelineDurationMicros,
+    updateAnimation,
+    volume,
+    waveform,
+  ]);
 
   useEffect(() => {
     if (waveform.status !== "ready") return;
@@ -310,12 +358,21 @@ function drawEnvelope(
   height: number,
 ) {
   const gain = 10 ** (visual.gainDb / 20);
+  const waveformStartPixels = (visual.waveformStartPercent / 100) * width;
+  const waveformWidthPixels = (visual.waveformWidthPercent / 100) * width;
+  if (waveformWidthPixels <= 0) return;
   context.strokeStyle = `rgb(${visual.color.map(Math.round).join(" ")})`;
   context.lineWidth = 1;
   context.beginPath();
   for (let x = 0; x < width; x += 1) {
-    const start = Math.floor((x * envelope.width) / width);
-    const end = Math.max(start + 1, Math.ceil(((x + 1) * envelope.width) / width));
+    const sourceX = x - waveformStartPixels;
+    if (sourceX < 0 || sourceX >= waveformWidthPixels) continue;
+    const start = Math.floor((sourceX * envelope.width) / waveformWidthPixels);
+    const end = Math.max(
+      start + 1,
+      Math.ceil(((sourceX + 1) * envelope.width) / waveformWidthPixels),
+    );
+
     let peakLeft = 0;
     let peakRight = 0;
     let rmsLeft = 0;

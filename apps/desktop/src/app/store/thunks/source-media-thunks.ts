@@ -66,10 +66,10 @@ import {
   capabilitiesChecking,
   capabilitiesFailed,
   capabilitiesReady,
+  selectAudioProcessingRange,
   selectHasSource,
   selectSourceSelection,
 } from "@/app/store/slices/source-slice";
-import { selectTrim } from "@/app/store/slices/trim-slice";
 import type { AppDispatch, RootState } from "@/app/store/store";
 import { analyzeTrackLoudness, audioChainSelection } from "@/app/store/thunks/audio-track-thunks";
 import { type AudioFilter, audioTrackLoudnessInputsKey } from "@/domain/audio-processing";
@@ -1285,7 +1285,7 @@ const prepareSourceWaveforms =
         return null;
       }
       const state = getState();
-      const trim = selectTrim(state);
+      const trim = selectAudioProcessingRange(state);
       if (!trim) {
         operation.cancel({ reason: "source_replaced" });
         return null;

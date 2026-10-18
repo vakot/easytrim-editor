@@ -13,6 +13,7 @@ import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snap
 import {
   audioTrackActivityAnalysisReady,
   audioTrackActivityAnalysisStarted,
+  audioTrackSyncOffsetChanged,
 } from "@/app/store/slices/audio-slice";
 import { chapterAdded } from "@/app/store/slices/chapters-slice";
 import {
@@ -607,6 +608,34 @@ describe("Timeline trim editing", () => {
     fireEvent.pointerMove(start, { clientX: 70, pointerId: 1, shiftKey: true });
     fireEvent.pointerUp(start, { clientX: 70, pointerId: 1 });
     expect(store.getState().trim.value?.startMicros).toBe(1_500_000);
+  });
+
+  it("shows and snaps to effective audio boundaries without rendering the audio panel", () => {
+    const store = renderPanel({ withAudio: true });
+    act(() => {
+      store.dispatch(
+        audioTrackSyncOffsetChanged({
+          streamIndex: 2,
+          syncOffset: { enabled: true, offsetMicros: 1_000_000 },
+        }),
+      );
+    });
+    layOutTimeline();
+
+    const boundaries = document.querySelectorAll("[data-audio-boundary]");
+    expect(boundaries).toHaveLength(3);
+    expect(
+      [...boundaries].some((boundary) => boundary.getAttribute("style")?.includes("left: 20%")),
+    ).toBe(true);
+
+    const start = screen.getByRole("slider", { name: "Trim start" });
+    fireEvent.pointerDown(start, { button: 0, clientX: 0, pointerId: 1 });
+    fireEvent.pointerMove(start, { clientX: 50, pointerId: 1, shiftKey: true });
+    expect(start).toHaveAttribute("data-snap-active");
+    fireEvent.pointerUp(start, { clientX: 50, pointerId: 1 });
+
+    expect(store.getState().trim.value?.startMicros).toBe(1_000_000);
+    expect(start).not.toHaveAttribute("data-snap-active");
   });
 
   it("keeps a Shift-dragged boundary on the timeline edge across pointer moves", () => {

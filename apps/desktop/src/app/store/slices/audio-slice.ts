@@ -2,15 +2,16 @@ import { createSelector, createSlice, type PayloadAction } from "@reduxjs/toolki
 
 import { editingInstanceActivated } from "@/app/store/actions/editing-instance-actions";
 import { sourceCleared, sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
-import { trimChanged } from "@/app/store/slices/trim-slice";
 import {
   activeAudioFilters,
   areAudioFiltersValid,
   type AudioFilter,
   audioFiltersRequireLoudnessAnalysis,
+  type AudioSyncOffset,
   type AudioTrackSettings,
   cloneAudioTrackProcessing,
   createDefaultAudioTrackProcessing,
+  isAudioSyncOffsetValid,
   isTrackVolumeValid,
   normalizeAudioTrackDefaults,
   sameAudioFilters,
@@ -61,6 +62,8 @@ interface AudioFilterPreviewState {
   /** Increments whenever the published chain changes. */
   revision: number;
   streamIndex: number;
+  /** Dialog-local temporal placement, kept outside the signal-processing chain. */
+  syncOffset: AudioSyncOffset | null;
 }
 
 type AudioFilterPreviewStatus = "active" | "analyzing" | "preparing" | "unavailable" | "updating";
@@ -115,6 +118,39 @@ const audioSlice = createSlice({
       track.metadata.language = normalizeMetadataLanguageCode(action.payload.language);
       track.metadata.title = action.payload.title || undefined;
     },
+    /** Placement edits preserve the signal chain, measurements, activity and waveform samples. */
+    audioTrackSyncOffsetChanged: (
+      state,
+      action: PayloadAction<{ streamIndex: number; syncOffset: AudioSyncOffset | null }>,
+    ) => {
+      const track = state.tracks.find((item) => item.streamIndex === action.payload.streamIndex);
+      const { syncOffset } = action.payload;
+      if (!track || (syncOffset !== null && !isAudioSyncOffsetValid(syncOffset))) return;
+
+      const currentOffset = track.processing.syncOffset ?? null;
+      const offsetChanged =
+        currentOffset?.enabled !== syncOffset?.enabled ||
+        currentOffset?.offsetMicros !== syncOffset?.offsetMicros;
+
+      const preview =
+        state.filterPreview?.streamIndex === action.payload.streamIndex
+          ? state.filterPreview
+          : null;
+
+      const previewOffset = preview?.syncOffset ?? null;
+      const previewFollowsCommittedOffset =
+        preview !== null &&
+        previewOffset?.enabled === currentOffset?.enabled &&
+        previewOffset?.offsetMicros === currentOffset?.offsetMicros;
+
+      if (syncOffset === null) delete track.processing.syncOffset;
+      else track.processing.syncOffset = { ...syncOffset };
+
+      if (preview && offsetChanged && previewFollowsCommittedOffset) {
+        preview.syncOffset = syncOffset ? { ...syncOffset } : null;
+        preview.revision += 1;
+      }
+    },
     /**
      * Track Volume is a post-filter multiplier. It leaves filter processing, loudness
      * measurements, activity ranges, and waveforms untouched.
@@ -137,13 +173,17 @@ const audioSlice = createSlice({
      */
     audioTrackFiltersApplied: (
       state,
-      action: PayloadAction<{ filters: AudioFilter[]; streamIndex: number }>,
+      action: PayloadAction<{
+        filters: AudioFilter[];
+        streamIndex: number;
+        syncOffset?: AudioSyncOffset | null;
+      }>,
     ) => {
       const track = state.tracks.find(
         (candidate) => candidate.streamIndex === action.payload.streamIndex,
       );
 
-      const { filters } = action.payload;
+      const { filters, syncOffset } = action.payload;
       const preview =
         state.filterPreview?.streamIndex === action.payload.streamIndex
           ? state.filterPreview
@@ -153,10 +193,25 @@ const audioSlice = createSlice({
       if (
         !track ||
         !areAudioFiltersValid(filters) ||
-        sameAudioFilters(track.processing.filters, filters)
+        (syncOffset !== undefined && syncOffset !== null && !isAudioSyncOffsetValid(syncOffset))
       ) {
         return;
       }
+
+      const filtersChanged = !sameAudioFilters(track.processing.filters, filters);
+      const currentOffset = track.processing.syncOffset ?? null;
+      const syncOffsetChanged =
+        syncOffset !== undefined &&
+        (currentOffset?.enabled !== syncOffset?.enabled ||
+          currentOffset?.offsetMicros !== syncOffset?.offsetMicros);
+
+      if (!filtersChanged && !syncOffsetChanged) return;
+
+      if (syncOffset !== undefined) {
+        if (syncOffset === null) delete track.processing.syncOffset;
+        else track.processing.syncOffset = { ...syncOffset };
+      }
+      if (!filtersChanged) return;
 
       const loudnessInputsChanged = !sameLoudnessInputs(track.processing.filters, filters);
       track.processing.filters = filters.map((filter) => ({ ...filter }));
@@ -181,6 +236,7 @@ const audioSlice = createSlice({
       if (!track) return;
       state.filterPreview = {
         filters: track.processing.filters.map((filter) => ({ ...filter })),
+        syncOffset: track.processing.syncOffset ? { ...track.processing.syncOffset } : null,
         id: action.payload.id,
         loudnessAnalysis: reusableAnalysis(track.loudnessAnalysis),
         playback: null,
@@ -194,14 +250,22 @@ const audioSlice = createSlice({
      */
     audioFilterPreviewChanged: (
       state,
-      action: PayloadAction<{ filters: AudioFilter[]; id: string }>,
+      action: PayloadAction<{
+        filters: AudioFilter[];
+        id: string;
+        syncOffset?: AudioSyncOffset | null;
+      }>,
     ) => {
       const preview = state.filterPreview;
       const { filters } = action.payload;
       if (
         preview?.id !== action.payload.id ||
         !areAudioFiltersValid(filters) ||
-        sameAudioFilters(preview.filters, filters)
+        (action.payload.syncOffset != null && !isAudioSyncOffsetValid(action.payload.syncOffset)) ||
+        (sameAudioFilters(preview.filters, filters) &&
+          (action.payload.syncOffset === undefined ||
+            (preview.syncOffset?.enabled === action.payload.syncOffset?.enabled &&
+              preview.syncOffset?.offsetMicros === action.payload.syncOffset?.offsetMicros)))
       ) {
         return;
       }
@@ -214,6 +278,9 @@ const audioSlice = createSlice({
             : { status: "idle" };
       }
       preview.filters = filters.map((filter) => ({ ...filter }));
+      if (action.payload.syncOffset !== undefined) {
+        preview.syncOffset = action.payload.syncOffset ? { ...action.payload.syncOffset } : null;
+      }
       preview.revision += 1;
     },
     audioFilterPreviewEnded: (state, action: PayloadAction<{ id: string }>) => {
@@ -437,15 +504,6 @@ const audioSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(trimChanged, (state) => {
-        for (const track of state.tracks) {
-          track.loudnessAnalysis = { status: "idle" };
-          if (audioFiltersRequireLoudnessAnalysis(track.processing.filters)) {
-            track.waveform = { status: "idle" };
-          }
-        }
-        if (state.filterPreview) state.filterPreview.loudnessAnalysis = { status: "idle" };
-      })
       .addCase(sourceSelected, (state) => {
         state.filterPreview = null;
         state.tracks = [];
@@ -571,6 +629,7 @@ const {
   audioTrackLoudnessAnalysisReady,
   audioTrackLoudnessAnalysisStarted,
   audioTrackMetadataChanged,
+  audioTrackSyncOffsetChanged,
   audioTrackToggled,
   audioTrackVolumeChanged,
   waveformDisplayFailed,
@@ -652,6 +711,7 @@ export {
   audioTrackLoudnessAnalysisReady,
   audioTrackLoudnessAnalysisStarted,
   audioTrackMetadataChanged,
+  audioTrackSyncOffsetChanged,
   audioTrackToggled,
   audioTrackVolumeChanged,
   selectAudioFilterPreview,

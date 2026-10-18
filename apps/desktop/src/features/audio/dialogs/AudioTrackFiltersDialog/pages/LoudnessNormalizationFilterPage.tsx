@@ -18,21 +18,18 @@ const content = defineAudioFilterPageContent<"loudnessNormalization">({
       label: (t) => t("audio.normalization.targetLabel"),
       unit: "LUFS",
       step: 0.5,
-      slider: { min: -36, max: -5 },
     },
     {
       parameter: "maxTruePeakDb",
       label: (t) => t("audio.normalization.truePeakLabel"),
       unit: "dBTP",
       step: 0.1,
-      slider: { min: -9, max: 0 },
     },
     {
       parameter: "loudnessRangeLu",
       label: (t) => t("audio.normalization.loudnessRangeLabel"),
       unit: "LU",
       step: 0.5,
-      slider: { min: 1, max: 20 },
     },
   ],
 });

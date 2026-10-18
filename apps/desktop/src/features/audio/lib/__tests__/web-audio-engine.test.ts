@@ -24,6 +24,109 @@ afterEach(() => {
 });
 
 describe("WebAudioEngine", () => {
+  it.each([500_000, -500_000, 5_000_000, -5_000_000])(
+    "places offset %i on video time and fills unavailable samples with silence",
+    async (syncOffsetMicros) => {
+      const { buffers, context } = createFakeAudioContext();
+      const decode = vi.fn(async (_track: AudioChainSelection, _start: number, duration: number) =>
+        chunk(duration),
+      );
+
+      const engine = new WebAudioEngine(context, decode, vi.fn());
+      engine.setDuration(2_000_000);
+      engine.setTracks([{ selection: selection(1), streamIndex: 1, volume: 1, syncOffsetMicros }]);
+      await engine.prepareAt(0);
+      const samples = buffers[0]!.channels[0]!;
+      expect(samples).toHaveLength(96_000);
+      const shift = Math.round((syncOffsetMicros * 48_000) / 1_000_000);
+      for (const frame of [0, 23_999, 24_000, 71_999, 72_000, 95_999]) {
+        const sourceFrame = frame - shift;
+        expect(samples[frame]).toBe(sourceFrame >= 0 && sourceFrame < 96_000 ? 0.25 : 0);
+      }
+      if (Math.abs(syncOffsetMicros) >= 2_000_000) expect(decode).not.toHaveBeenCalled();
+      else
+        expect(decode).toHaveBeenCalledWith(
+          selection(1),
+          Math.max(0, -syncOffsetMicros),
+          1_500_000,
+          expect.any(AbortSignal),
+          expect.any(Object),
+        );
+      engine.close();
+    },
+  );
+
+  it.each([500_000, -500_000])(
+    "places a late, short stream with offset %i",
+    async (syncOffsetMicros) => {
+      const { buffers, context } = createFakeAudioContext();
+      const decode = vi.fn(async (_track: AudioChainSelection, _start: number, duration: number) =>
+        chunk(duration),
+      );
+
+      const engine = new WebAudioEngine(context, decode, vi.fn());
+      engine.setDuration(2_000_000);
+      engine.setTracks([
+        {
+          selection: selection(1),
+          streamIndex: 1,
+          volume: 1,
+          startTimeMicros: 500_000,
+          durationMicros: 500_000,
+          syncOffsetMicros,
+        },
+      ]);
+      await engine.prepareAt(0);
+      expect(decode).toHaveBeenCalledWith(
+        selection(1),
+        500_000,
+        500_000,
+        expect.any(AbortSignal),
+        expect.any(Object),
+      );
+      const samples = buffers[0]!.channels[0]!;
+      const first = ((500_000 + syncOffsetMicros) * 48_000) / 1_000_000;
+      expect(samples[first]).toBe(0.25);
+      expect(samples[first + 23_999]).toBe(0.25);
+      expect(samples[first + 24_000]).toBe(0);
+      if (first > 0) expect(samples[first - 1]).toBe(0);
+      engine.close();
+    },
+  );
+
+  it("decodes the audio tail shifted into the end of the video timeline", async () => {
+    const { buffers, context } = createFakeAudioContext();
+    const decode = vi.fn(async (_track: AudioChainSelection, _start: number, duration: number) =>
+      chunk(duration),
+    );
+
+    const engine = new WebAudioEngine(context, decode, vi.fn());
+    engine.setDuration(60_000_000);
+    engine.setTracks([
+      {
+        selection: selection(1),
+        streamIndex: 1,
+        volume: 1,
+        durationMicros: 65_000_000,
+        syncOffsetMicros: -5_000_000,
+      },
+    ]);
+
+    await engine.prepareAt(58);
+
+    expect(decode).toHaveBeenCalledWith(
+      selection(1),
+      63_000_000,
+      2_000_000,
+      expect.any(AbortSignal),
+      expect.any(Object),
+    );
+    expect(buffers[0]!.channels[0]).toHaveLength(96_000);
+    expect(buffers[0]!.channels[0]![0]).toBe(0.25);
+    expect(buffers[0]!.channels[0]![95_999]).toBe(0.25);
+    engine.close();
+  });
+
   it("ignores a queued source completion from an earlier playback generation", async () => {
     const { context, sources } = createFakeAudioContext();
     const onError = vi.fn();
@@ -474,6 +577,95 @@ describe("WebAudioEngine", () => {
       expect.any(Number),
       expect.any(AbortSignal),
       { preview: false, replacement: false },
+    );
+    engine.close();
+  });
+
+  it("preserves prefetched samples across timing changes and reuses them if the offset returns", async () => {
+    const { context } = createFakeAudioContext();
+    const decode = vi.fn(
+      async (_selection: AudioChainSelection, _startMicros: number, durationMicros: number) =>
+        chunk(durationMicros),
+    );
+
+    const engine = new WebAudioEngine(context, decode, vi.fn());
+    engine.setDuration(4_000_000);
+    engine.setTracks([{ selection: selection(1), streamIndex: 1, volume: 1 }]);
+    await engine.prefetchAt(0);
+
+    engine.setTracks([
+      { selection: selection(1), streamIndex: 1, syncOffsetMicros: 500_000, volume: 1 },
+    ]);
+    engine.setTracks([{ selection: selection(1), streamIndex: 1, volume: 1 }]);
+    decode.mockClear();
+    await engine.prepareAt(0);
+
+    expect(decode).not.toHaveBeenCalled();
+    engine.close();
+  });
+
+  it("does not use a prefetched timeline buffer at a different offset", async () => {
+    const { buffers, context } = createFakeAudioContext();
+    const decode = vi.fn(
+      async (_selection: AudioChainSelection, _startMicros: number, durationMicros: number) =>
+        chunk(durationMicros),
+    );
+
+    const engine = new WebAudioEngine(context, decode, vi.fn());
+    engine.setDuration(4_000_000);
+    engine.setTracks([{ selection: selection(1), streamIndex: 1, volume: 1 }]);
+    await engine.prefetchAt(0);
+    decode.mockClear();
+    engine.setTracks([
+      { selection: selection(1), streamIndex: 1, syncOffsetMicros: 500_000, volume: 1 },
+    ]);
+
+    await engine.prepareAt(0);
+
+    expect(decode).toHaveBeenCalledWith(selection(1), 0, 1_500_000, expect.any(AbortSignal), {
+      preview: false,
+      replacement: false,
+    });
+    expect(buffers.at(-1)?.channels[0]?.[24_000]).toBe(0.25);
+    engine.close();
+  });
+
+  it("reschedules an offset change without entering the processing replacement lifecycle", async () => {
+    const { buffers, context } = createFakeAudioContext();
+    const statuses: string[] = [];
+    const decode = vi.fn(
+      async (
+        _selection: AudioChainSelection,
+        _startMicros: number,
+        durationMicros: number,
+        signal: AbortSignal,
+        role: { preview: boolean; replacement: boolean },
+      ) => {
+        if (signal.aborted) throw new Error("Audio decode was aborted.");
+        if (role.replacement) throw new Error("Offset updates must not replace processing.");
+        return chunk(durationMicros);
+      },
+    );
+
+    const engine = new WebAudioEngine(context, decode, vi.fn(), vi.fn(), (_stream, _tag, status) =>
+      statuses.push(status),
+    );
+
+    engine.setDuration(8_000_000);
+    engine.setTracks([{ selection: selection(1), streamIndex: 1, volume: 1 }]);
+    await engine.startAt(0);
+    decode.mockClear();
+    statuses.length = 0;
+
+    engine.setTracks([
+      { selection: selection(1), streamIndex: 1, syncOffsetMicros: 500_000, volume: 1 },
+    ]);
+
+    await vi.waitFor(() => expect(decode).toHaveBeenCalled());
+    expect(decode.mock.calls[0]?.[4]).toEqual({ preview: false, replacement: false });
+    expect(statuses).not.toContain("updating");
+    await vi.waitFor(() =>
+      expect(buffers.some((buffer) => buffer.channels[0]?.[24_000] === 0.25)).toBe(true),
     );
     engine.close();
   });

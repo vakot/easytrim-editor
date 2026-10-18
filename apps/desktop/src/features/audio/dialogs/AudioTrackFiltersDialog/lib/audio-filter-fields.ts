@@ -3,10 +3,9 @@ import type { TFunction } from "i18next";
 import type { AudioFilterParameters, AudioFilterType } from "@/domain/audio-processing";
 
 interface AudioFilterField<T extends AudioFilterType> {
+  defaultValue?: number;
   label: (t: TFunction) => string;
   parameter: keyof AudioFilterParameters<T> & string;
-  /** A practical slider span inside the valid range; the input accepts the whole range. */
-  slider: { max: number; min: number };
   step: number;
   /** Technical units stay untranslated. */
   unit: string;

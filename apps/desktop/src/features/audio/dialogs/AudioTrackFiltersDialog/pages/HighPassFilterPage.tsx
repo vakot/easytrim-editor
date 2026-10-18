@@ -19,7 +19,6 @@ const content = defineAudioFilterPageContent<"highPass">({
       label: (t) => t("audio.highPass.cutoffLabel"),
       unit: "Hz",
       step: 1,
-      slider: { min: 20, max: 300 },
     },
   ],
 });

@@ -127,7 +127,7 @@ describe("processed waveform preparation", () => {
   });
 
   it.each(["filters", "trim", "source"])(
-    "rejects pending waveform work after %s changes",
+    "preserves pending waveform work only when %s changes leave the signal intact",
     async (change) => {
       const store = waveformStore();
       let resolve!: (value: unknown) => void;
@@ -146,7 +146,8 @@ describe("processed waveform preparation", () => {
       if (change === "source") store.dispatch(sourceSelected({ source: secondSource }));
       resolve([measurement]);
       await pending;
-      expect(native.prepareWaveforms).not.toHaveBeenCalled();
+      if (change === "trim") expect(native.prepareWaveforms).toHaveBeenCalledOnce();
+      else expect(native.prepareWaveforms).not.toHaveBeenCalled();
     },
   );
 

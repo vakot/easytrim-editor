@@ -33,6 +33,7 @@ interface WebAudioTrack {
   selection: AudioChainSelection;
   startTimeMicros?: number;
   streamIndex: number;
+  syncOffsetMicros?: number;
   /** An opaque label passed back with this track's render status. */
   tag?: number;
   /** Post-filter Track Volume, applied by the track's GainNode. */
@@ -78,6 +79,7 @@ interface ProcessingChange {
 /** One processed chain of a track, as requested from the native renderer. */
 interface TrackRender {
   key: string;
+  offsetFrames: number;
   preview: boolean;
   selection: AudioChainSelection;
 }
@@ -127,6 +129,7 @@ interface ScheduledTrack {
   generation: number;
   input: GainNode;
   nodes: Set<AudioBufferSourceNode>;
+  offsetFrames: number;
   preview: boolean;
   retiredVoices: Set<TrackVoice>;
   scheduledThroughFrame: number;
@@ -235,9 +238,12 @@ class WebAudioEngine {
     }
 
     let processingChanged = false;
+    let timingChanged = false;
     let rangeChanged = false;
     const statusChanged: ScheduledTrack[] = [];
     for (const track of tracks) {
+      const offsetFrames = Math.round(((track.syncOffsetMicros ?? 0) * SAMPLE_RATE) / 1_000_000);
+      // Offset moves processed samples on the timeline; only the selection identifies processing.
       const key = JSON.stringify(track.selection);
       const current = this.tracks.get(track.streamIndex);
       const startFrame = Math.max(
@@ -248,8 +254,8 @@ class WebAudioEngine {
       const durationFrame =
         track.durationMicros === undefined
           ? this.durationFrames
-          : Math.min(
-              this.durationFrames,
+          : Math.max(
+              0,
               Math.round(
                 (((track.startTimeMicros ?? 0) + track.durationMicros) * SAMPLE_RATE) / 1_000_000,
               ),
@@ -261,6 +267,10 @@ class WebAudioEngine {
         current.selectionKey = key;
         if (current.failedKey !== key) current.failedKey = null;
         statusChanged.push(current);
+      }
+      if (current && current.offsetFrames !== offsetFrames) {
+        timingChanged = true;
+        current.offsetFrames = offsetFrames;
       }
       if (current && current.tag !== track.tag) {
         current.tag = track.tag;
@@ -295,17 +305,21 @@ class WebAudioEngine {
       this.seek(playbackPositionFrame / SAMPLE_RATE);
     } else if (this.isPlaying && this.hasTracks && processingChanged) {
       this.changeProcessing();
+    } else if (this.isPlaying && this.hasTracks && timingChanged) {
+      this.preparedBatch = null;
+      if (this.processingChange !== null) this.changeProcessing();
+      else this.seek(playbackPositionFrame / SAMPLE_RATE);
     } else if (this.isPlaying && this.hasTracks) {
       this.requestPump();
     } else if (
       this.playbackRequested &&
       this.hasTracks &&
-      (membershipChanged || rangeChanged || processingChanged)
+      (membershipChanged || rangeChanged || processingChanged || timingChanged)
     ) {
-      // A start is still decoding the previous processing; start again with the new one.
+      // A start is still decoding the previous chain or placement; start again with the new one.
       this.seek(this.anchorPositionFrame / SAMPLE_RATE);
     } else {
-      if (membershipChanged || rangeChanged || processingChanged) {
+      if (membershipChanged || rangeChanged || processingChanged || timingChanged) {
         this.generation += 1;
         this.batchInFlight = false;
         this.preparedBatch = null;
@@ -494,6 +508,7 @@ class WebAudioEngine {
       const ranges = await Promise.all(
         tracks.map(async (track) => {
           const render = this.renderOf(track);
+          const key = this.prefetchKey(track);
           return {
             buffer: await this.decodeBuffer(
               track,
@@ -502,7 +517,7 @@ class WebAudioEngine {
               endFrame,
               request.controller.signal,
             ),
-            key: this.prefetchKey(track),
+            key,
             render,
             track,
           };
@@ -579,14 +594,15 @@ class WebAudioEngine {
     const runtime = connectAudioTrackRuntime(this.context, this.audioMix);
     voice.connect(runtime.input);
     const scheduled: ScheduledTrack = {
+      offsetFrames: Math.round(((track.syncOffsetMicros ?? 0) * SAMPLE_RATE) / 1_000_000),
       abortController: null,
       audible: null,
       cursorFrame: this.anchorPositionFrame,
       durationFrame:
         track.durationMicros === undefined
           ? this.durationFrames
-          : Math.min(
-              this.durationFrames,
+          : Math.max(
+              0,
               Math.round(
                 (((track.startTimeMicros ?? 0) + track.durationMicros) * SAMPLE_RATE) / 1_000_000,
               ),
@@ -619,9 +635,14 @@ class WebAudioEngine {
    */
   private renderOf(track: ScheduledTrack): TrackRender {
     if (track.failedKey === track.selectionKey && track.preview && track.audible) {
-      return { ...track.audible, preview: track.preview };
+      return { ...track.audible, offsetFrames: track.offsetFrames, preview: track.preview };
     }
-    return { key: track.selectionKey, preview: track.preview, selection: track.selection };
+    return {
+      offsetFrames: track.offsetFrames,
+      key: track.selectionKey,
+      preview: track.preview,
+      selection: track.selection,
+    };
   }
 
   private pendingStatus(track: ScheduledTrack): TrackRenderStatus {
@@ -914,8 +935,8 @@ class WebAudioEngine {
     endFrame: number,
     signal: AbortSignal,
   ): Promise<AudioBuffer> {
-    const decodeStartFrame = Math.max(startFrame, track.startFrame);
-    const decodeEndFrame = Math.min(endFrame, track.durationFrame);
+    const decodeStartFrame = Math.max(startFrame - render.offsetFrames, track.startFrame);
+    const decodeEndFrame = Math.min(endFrame - render.offsetFrames, track.durationFrame);
     const decodeFrameCount = Math.max(0, decodeEndFrame - decodeStartFrame);
     const chunk =
       decodeFrameCount > 0
@@ -942,7 +963,7 @@ class WebAudioEngine {
     const buffer = this.context.createBuffer(CHANNELS, endFrame - startFrame, SAMPLE_RATE);
     const left = buffer.getChannelData(0);
     const right = buffer.getChannelData(1);
-    const destinationStartFrame = decodeStartFrame - startFrame;
+    const destinationStartFrame = decodeStartFrame + render.offsetFrames - startFrame;
     for (let frame = 0; frame < decodedFrameCount; frame += 1) {
       left[destinationStartFrame + frame] = chunk.samples[frame * chunk.channels]!;
       right[destinationStartFrame + frame] = chunk.samples[frame * chunk.channels + 1]!;
@@ -952,7 +973,7 @@ class WebAudioEngine {
 
   /** Everything a decoded chunk depends on; a change makes a prefetched chunk stale. */
   private prefetchKey(track: ScheduledTrack): string {
-    return `${this.renderOf(track).key}|${track.startFrame}|${track.durationFrame}`;
+    return `${this.renderOf(track).key}|${track.offsetFrames}|${track.startFrame}|${track.durationFrame}`;
   }
 
   private prefetchedRanges(startFrame: number): PrefetchedAudioChunk["ranges"] | null {
@@ -1262,7 +1283,7 @@ class WebAudioEngine {
   }
 
   private frameToMicros(frame: number): number {
-    return Math.min(this.durationMicros, Math.round((frame * 1_000_000) / SAMPLE_RATE));
+    return Math.round((frame * 1_000_000) / SAMPLE_RATE);
   }
 }
 

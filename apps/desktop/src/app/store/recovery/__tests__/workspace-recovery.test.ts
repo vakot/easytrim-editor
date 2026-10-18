@@ -2,7 +2,11 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { editingInstanceActivated } from "@/app/store/actions/editing-instance-actions";
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
-import { audioTrackFiltersApplied, audioTrackVolumeChanged } from "@/app/store/slices/audio-slice";
+import {
+  audioTrackFiltersApplied,
+  audioTrackSyncOffsetChanged,
+  audioTrackVolumeChanged,
+} from "@/app/store/slices/audio-slice";
 import { cropChanged, flipToggled, rotationChanged } from "@/app/store/slices/crop-slice";
 import {
   activeEditingInstanceChanged,
@@ -253,6 +257,12 @@ describe("workspace recovery contract", () => {
       }),
     );
     store.dispatch(audioTrackVolumeChanged({ streamIndex: 2, volume: 2.5 }));
+    store.dispatch(
+      audioTrackSyncOffsetChanged({
+        streamIndex: 2,
+        syncOffset: { enabled: true, offsetMicros: -250_000 },
+      }),
+    );
     store.dispatch(audioTrackFiltersApplied({ filters: [broadcastNormalization], streamIndex: 2 }));
     store.dispatch(exportArgumentsChanged("-crf 18"));
 
@@ -352,7 +362,11 @@ describe("workspace recovery contract", () => {
             enabled: true,
             metadata: {},
             streamIndex: 2,
-            processing: { filters: [broadcastNormalization], volume: 2.5 },
+            processing: {
+              filters: [broadcastNormalization],
+              volume: 2.5,
+              syncOffset: { enabled: true, offsetMicros: -250_000 },
+            },
           },
           { enabled: true, streamIndex: 4, processing: { filters: [], volume: 1 } },
         ],

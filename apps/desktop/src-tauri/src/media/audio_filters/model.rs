@@ -152,10 +152,25 @@ pub struct AudioChainSelection {
     pub loudness_measurements: Vec<FilterMeasurement>,
 }
 
+#[derive(Clone, Debug, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct AudioSyncOffset {
+    pub enabled: bool,
+    pub offset_micros: i64,
+}
+
+impl AudioSyncOffset {
+    pub fn effective_micros(&self) -> i64 {
+        if self.enabled { self.offset_micros } else { 0 }
+    }
+}
+
 /// An exported track: its filter chain followed by its Track Volume multiplier.
 #[derive(Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct AudioTrackSelection {
+    #[serde(default)]
+    pub sync_offset: Option<AudioSyncOffset>,
     #[serde(flatten)]
     pub chain: AudioChainSelection,
     pub volume: f64,
@@ -167,7 +182,12 @@ impl AudioTrackSelection {
     }
 
     pub(crate) fn needs_processing(&self) -> bool {
-        self.chain.filters.iter().any(|filter| filter.enabled) || self.volume != 1.0
+        self.chain.filters.iter().any(|filter| filter.enabled)
+            || self.volume != 1.0
+            || self
+                .sync_offset
+                .as_ref()
+                .is_some_and(|offset| offset.effective_micros() != 0)
     }
 }
 
@@ -359,6 +379,7 @@ mod tests {
         assert!(selection.needs_processing());
 
         let bypassed = AudioTrackSelection {
+            sync_offset: None,
             chain: AudioChainSelection {
                 stream_index: 0,
                 filters: vec![disabled(gain("g", 6.0)), disabled(limiter("lim", -3.0))],

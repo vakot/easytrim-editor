@@ -12,7 +12,8 @@ Source audio
   → master output
 ```
 
-`AudioTrackProcessing` is `{ filters: AudioFilter[]; volume: number }`. TypeScript
+`AudioTrackProcessing` is
+`{ filters: AudioFilter[]; volume: number; syncOffset?: AudioSyncOffset }`. TypeScript
 (`domain/audio-processing.ts`) and Rust (`media/audio_filters/model.rs`) share the same model and
 ranges; Rust validates every request again.
 
@@ -48,6 +49,37 @@ Gain and Loudness Normalization are ordinary filters. They coexist, and only the
 how they interact: Gain before normalization changes what is measured and is then compensated;
 Gain after normalization changes the normalized output.
 
+## Audio Sync Offset
+
+Each stream may have one optional `syncOffset: { enabled, offsetMicros }`. It is temporal placement,
+separate from the ordered signal filters and Track Volume. Missing means zero; disabled retains the
+signed integer microseconds while applying zero. `audioTrackSyncOffsetChanged` replaces it atomically;
+`null` removes it. The audio controller exposes `changeSyncOffset` for subsequent controls.
+
+The video timeline remains the reference: `audioSourceTime = videoTime - effectiveOffset`.
+Positive offsets delay a stream; negative offsets advance it. Playback rounds placement once to the
+canonical 48 kHz sample grid. It decodes only the available original sample interval and fills the
+rest of each video-time buffer with silence, without changing playback rate. Live edits use the
+existing sample-aligned replacement/crossfade lifecycle, including while a filter draft is audible.
+
+Export uses the same sample grid. An active nonzero offset requires audio encoding, including Fast
+Export, whose video still copies with its existing keyframe limitation. A separate unseeked input
+feeds the canonical chain from the original origin. Placement follows signal processing; only then
+does export pad unavailable regions, crop to the requested video interval, and apply Track Volume
+before optional mixing. Content outside video time remains available in the original stream but is
+excluded from the output. A fully shifted-out track produces silence for the requested interval.
+
+Offset is excluded from loudness/activity inputs, waveform samples, and native processed-PCM keys.
+Normalization now measures the full original source independently of trim, and processed export
+starts filters at the original origin, so trim changes cannot change their scope or state.
+
+Offsets belong to the existing Redux audio track processing descriptor. Snapshots, instance switches,
+duplication, Workspace History undo/redo, workspace recovery, and immutable Export Queue requests
+retain the enabled flag and signed value. Old snapshots without the optional field keep zero offset.
+Source replacement resets it with the rest of source-bound settings. Signal filters can be edited,
+disabled, or removed without changing placement, and track muting preserves both. The waveform
+interaction uses the video playhead as the reference and updates this same per-stream value.
+
 ## Track Volume
 
 Track Volume balances tracks; it is not a filter. It is a linear amplitude multiplier from 0 to 5
@@ -77,8 +109,8 @@ with its measurement; a missing measurement is an error, never a skipped or reor
   stateless). Otherwise it is dynamic `loudnorm` followed by a return to 48 kHz. An unmeasurable
   (silent) input passes through unchanged.
 
-An empty chain compiles to nothing for export, so unprocessed tracks keep their source rate and can
-still be stream-copied.
+Tracks without enabled filters, a volume change, or an active offset remain eligible for stream copy
+at their original sample rate. Encoded audio uses the canonical input stage even with an empty chain.
 
 ## Processing capabilities and strategies
 
@@ -107,12 +139,12 @@ normalization instances resolved with their own measurements. Several normalizat
 therefore measured in dependency order, one pass each. Passes run FFmpeg's first loudnorm pass into
 a null output; no PCM is written.
 
-Measurements are cached natively by source activation, stream, analysis range (the timeline
-selection), and the compiled upstream chain. Changing an upstream filter, parameter, or order, the
-source, or the range invalidates a measurement; downstream filters and the instance's own targets
-do not. The frontend keeps a copy with the track (`loudnessAnalysis`) keyed the same way, passes it
-with export requests so a queued export stays reproducible, and measures enabled tracks
-automatically once their inputs settle, because playback waits for those measurements.
+Measurements are cached natively by source activation, stream, analysis range (the full original
+source timeline), and the compiled upstream chain. Changing the source or an upstream filter, its
+parameters, or its order invalidates a measurement. Trim, offset, downstream filters, and the
+instance's own targets do not. The frontend keeps a copy with the track (`loudnessAnalysis`) keyed
+the same way, passes it with export requests so a queued export stays reproducible, and measures
+enabled tracks automatically once their inputs settle, because playback waits for those measurements.
 
 ## Demand-driven rendering
 
@@ -183,16 +215,20 @@ The engine is the future authoritative processed signal. In this version:
   requested in order continue one session. WebAudio applies only Track Volume; all filtering,
   including High-pass, is rendered natively.
 - **Export** renders each track with the compiled chain followed by Track Volume in one continuous
-  FFmpeg pass over the export range, which is the canonical definition; it does not read the PCM
-  cache yet.
+  FFmpeg pass from the original source origin, placing the processed samples on video time before
+  cropping the export range; it does not read the PCM cache yet.
 - **Activity detection** analyzes the compiled chain output without Track Volume.
 - **Waveforms** reduce canonical stereo PCM from the engine, rendered with the complete committed
   chain over the same whole-timeline range as playback, so both share one render key and its
   cached segments. Normalization measurements are resolved first, exactly as for playback. The
   envelope is the signal before Track Volume, which only scales the canvas, so a volume change never
-  regenerates it; any filter, parameter, or order change does, and so does a trim change when the
-  chain contains normalization. A silent processed waveform does not disable its track; only a
-  silent stream without filters does.
+  regenerates it; any filter, parameter, or order change does. Trim and offset changes never
+  regenerate the envelope. The canvas shifts the existing full-timeline samples by the Sync Offset
+  and marks unavailable timeline regions without changing the signal. While the filters dialog is
+  open, draft Sync Offset changes also preview the canvas placement; other draft processing changes
+  do not regenerate or reposition the waveform until Apply. Timeline markers and snapping always use
+  the committed offset. A silent processed waveform does not disable its track; only a silent stream
+  without filters does.
 - A waveform pass rejects provisional cached segments and renders those frames continuously from
   the origin. When the stream's whole range would take more than half of the cache, the pass reuses
   cached segments but streams the frames it renders without caching them, so it never evicts the

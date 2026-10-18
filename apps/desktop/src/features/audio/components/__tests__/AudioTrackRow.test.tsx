@@ -11,6 +11,7 @@ import {
   audioTrackActivityAnalysisStarted,
   audioTrackFiltersApplied,
   audioTrackMetadataChanged,
+  audioTrackSyncOffsetChanged,
   audioTrackToggled,
   audioTrackVolumeChanged,
   waveformReady,
@@ -30,7 +31,10 @@ import { audioTrackColor } from "../../lib/audio-track-color";
 import { AudioTrackRow } from "../AudioTrack/AudioTrackRow";
 import { AudioTrackVolumeControl } from "../AudioTrack/components/AudioTrackVolumeControl";
 
-const { prepareSourceWaveforms } = vi.hoisted(() => ({ prepareSourceWaveforms: vi.fn() }));
+const { prepareSourceWaveforms, timeline } = vi.hoisted(() => ({
+  prepareSourceWaveforms: vi.fn(),
+  timeline: { positionMicros: 0 },
+}));
 
 vi.mock("@/app/store/thunks/source-media-thunks", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/app/store/thunks/source-media-thunks")>()),
@@ -40,8 +44,20 @@ vi.mock("@/app/store/thunks/source-media-thunks", async (importOriginal) => ({
   },
 }));
 
+vi.mock("@/features/playback", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/features/playback")>()),
+  useTimelinePlayback: () => ({
+    durationMicros: 0,
+    framesCount: 0,
+    getPositionMicros: () => timeline.positionMicros,
+    seekTime: () => undefined,
+    stepFrame: () => false,
+  }),
+}));
+
 afterEach(() => {
   prepareSourceWaveforms.mockReset();
+  timeline.positionMicros = 0;
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
@@ -65,9 +81,27 @@ function createAudioPlayback() {
   } satisfies AudioPlaybackAdapter;
 }
 
-function createStore(sourceLanguage: string | undefined = "eng") {
+function createStore(
+  sourceLanguage: string | undefined = "eng",
+  {
+    audioDurationMicros,
+    audioStartTimeMicros,
+    mediaDurationMicros,
+  }: {
+    audioDurationMicros?: number;
+    audioStartTimeMicros?: number;
+    mediaDurationMicros?: number;
+  } = {},
+) {
   const store = createAppStore();
   const media = mediaWithAudio(firstSource.sourcePath);
+  if (mediaDurationMicros !== undefined) media.durationMicros = mediaDurationMicros;
+  if (audioDurationMicros !== undefined) {
+    media.audioStreams[0]!.durationMicros = audioDurationMicros;
+  }
+  if (audioStartTimeMicros !== undefined) {
+    media.audioStreams[0]!.startTimeMicros = audioStartTimeMicros;
+  }
   media.audioStreams[0]!.language = sourceLanguage;
   store.dispatch(sourceSelected({ loadToken: 1, source: firstSource }));
   store.dispatch(sourceReady({ loadToken: 1, media }));
@@ -75,17 +109,28 @@ function createStore(sourceLanguage: string | undefined = "eng") {
 }
 
 function renderRow({
+  audioDurationMicros,
+  audioStartTimeMicros,
   enabled = true,
+  mediaDurationMicros,
   showColorPreview = false,
   sourceLanguage,
   streamIndex = 2,
 }: {
+  audioDurationMicros?: number;
+  audioStartTimeMicros?: number;
   enabled?: boolean;
+  mediaDurationMicros?: number;
   showColorPreview?: boolean;
   sourceLanguage?: string;
   streamIndex?: number;
 } = {}) {
-  const store = createStore(sourceLanguage);
+  const store = createStore(sourceLanguage, {
+    audioDurationMicros,
+    audioStartTimeMicros,
+    mediaDurationMicros,
+  });
+
   if (!enabled) store.dispatch(audioTrackToggled({ streamIndex }));
   const audioPlayback = createAudioPlayback();
 
@@ -238,6 +283,167 @@ function showWaveform(store: ReturnType<typeof createAppStore>, width = 2) {
 }
 
 describe("AudioTrackRow", () => {
+  it("previews and confirms interactive synchronization without moving the video playhead", async () => {
+    const user = userEvent.setup();
+    const { store } = renderRow();
+    timeline.positionMicros = 1_000_000;
+    const interaction = document.querySelector<HTMLElement>(
+      '[data-slot="audio-sync-interaction"]',
+    )!;
+
+    vi.spyOn(interaction, "getBoundingClientRect").mockReturnValue({
+      bottom: 50,
+      height: 50,
+      left: 100,
+      right: 1_100,
+      top: 0,
+      width: 1_000,
+      x: 100,
+      y: 0,
+      toJSON: () => ({}),
+    });
+
+    fireEvent.pointerMove(interaction, { clientX: 600, pointerType: "mouse" });
+    expect(document.querySelector('[data-slot="audio-sync-ghost-playhead"]')).toHaveStyle({
+      left: "50%",
+    });
+    fireEvent.click(interaction.querySelector("canvas")!, { button: 0, clientX: 600 });
+
+    const confirm = await screen.findByRole("button", { name: "Sync offset" });
+    expect(document.querySelector('[data-slot="audio-sync-temporary-marker"]')).toHaveStyle({
+      left: "50%",
+    });
+    expect(document.activeElement).toBe(confirm);
+    expect(timeline.positionMicros).toBe(1_000_000);
+
+    await user.keyboard("{Enter}");
+
+    expect(store.getState().audio.tracks[0]?.processing.syncOffset).toEqual({
+      enabled: true,
+      // video reference (1 s) + existing offset (0) - clicked waveform time (2.5 s)
+      offsetMicros: -1_500_000,
+    });
+    await waitFor(() =>
+      expect(document.querySelector('[data-slot="audio-sync-temporary-marker"]')).toBeNull(),
+    );
+    expect(timeline.positionMicros).toBe(1_000_000);
+  });
+
+  it("shows the short sync tooltip and hides it when synchronization opens", async () => {
+    renderRow();
+    const interaction = document.querySelector<HTMLElement>(
+      '[data-slot="audio-sync-interaction"]',
+    )!;
+
+    vi.spyOn(interaction, "getBoundingClientRect").mockReturnValue({
+      bottom: 50,
+      height: 50,
+      left: 100,
+      right: 1_100,
+      top: 0,
+      width: 1_000,
+      x: 100,
+      y: 0,
+      toJSON: () => ({}),
+    });
+
+    expect(interaction).not.toHaveAttribute("title");
+    const canvas = interaction.querySelector("canvas")!;
+    fireEvent.pointerMove(canvas, { clientX: 620, clientY: 25, pointerType: "mouse" });
+
+    const tooltip = await screen.findByRole("tooltip");
+    const ghost = document.querySelector<HTMLElement>('[data-slot="audio-sync-ghost-playhead"]')!;
+    expect(tooltip).toHaveTextContent("Sync Offset");
+    expect(tooltip).toHaveAttribute("data-side", "top");
+    expect(tooltip).toHaveClass("rounded-md", "bg-foreground");
+    expect(tooltip).toHaveClass("pointer-events-none");
+    expect(ghost).toHaveStyle({ left: "52%" });
+    expect(ghost).toHaveAttribute("aria-describedby", tooltip.id);
+
+    fireEvent.pointerMove(canvas, { clientX: 630, clientY: 30, pointerType: "mouse" });
+    expect(ghost).toHaveStyle({ left: "53%" });
+    expect(ghost).toHaveAttribute("aria-describedby", tooltip.id);
+
+    fireEvent.pointerLeave(interaction);
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+
+    fireEvent.pointerMove(canvas, { clientX: 630, clientY: 30, pointerType: "mouse" });
+    await screen.findByRole("tooltip");
+    fireEvent.click(canvas, { button: 0, clientX: 630 });
+    await screen.findByRole("button", { name: "Sync offset" });
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+
+  it("uses media-derived bounds for interactive offsets beyond ten seconds", async () => {
+    const user = userEvent.setup();
+    const { store } = renderRow({
+      audioDurationMicros: 100_000_000,
+      audioStartTimeMicros: 5_000_000,
+      mediaDurationMicros: 60_000_000,
+    });
+
+    timeline.positionMicros = 55_000_000;
+    const interaction = document.querySelector<HTMLElement>(
+      '[data-slot="audio-sync-interaction"]',
+    )!;
+
+    vi.spyOn(interaction, "getBoundingClientRect").mockReturnValue({
+      bottom: 50,
+      height: 50,
+      left: 100,
+      right: 1_100,
+      top: 0,
+      width: 1_000,
+      x: 100,
+      y: 0,
+      toJSON: () => ({}),
+    });
+
+    fireEvent.click(interaction.querySelector("canvas")!, { button: 0, clientX: 600 });
+    await user.keyboard("{Enter}");
+
+    expect(store.getState().audio.tracks[0]?.processing.syncOffset).toEqual({
+      enabled: true,
+      offsetMicros: 25_000_000,
+    });
+  });
+
+  it("cancels interactive synchronization on Escape without changing an existing offset", async () => {
+    const user = userEvent.setup();
+    const { store } = renderRow();
+    store.dispatch(
+      audioTrackSyncOffsetChanged({
+        streamIndex: 2,
+        syncOffset: { enabled: true, offsetMicros: 500_000 },
+      }),
+    );
+    const interaction = document.querySelector<HTMLElement>(
+      '[data-slot="audio-sync-interaction"]',
+    )!;
+
+    vi.spyOn(interaction, "getBoundingClientRect").mockReturnValue({
+      bottom: 50,
+      height: 50,
+      left: 100,
+      right: 1_100,
+      top: 0,
+      width: 1_000,
+      toJSON: () => ({}),
+    } as DOMRect);
+    fireEvent.click(interaction.querySelector("canvas")!, { button: 0, clientX: 600 });
+    await screen.findByRole("button", { name: "Sync offset" });
+
+    await user.keyboard("{Escape}");
+
+    expect(store.getState().audio.tracks[0]?.processing.syncOffset).toEqual({
+      enabled: true,
+      offsetMicros: 500_000,
+    });
+    await waitFor(() =>
+      expect(document.querySelector('[data-slot="audio-sync-temporary-marker"]')).toBeNull(),
+    );
+  });
+
   it("shows the waveform as preparing until it is ready", () => {
     renderRow();
 
@@ -254,6 +460,216 @@ describe("AudioTrackRow", () => {
       "left-(--timeline-selection-start)",
       "right-(--timeline-selection-end-inset)",
     );
+  });
+
+  it("marks fully shifted audio unavailable and offers its reset action", async () => {
+    const { store } = renderRow();
+    act(() => {
+      store.dispatch(
+        audioTrackSyncOffsetChanged({
+          streamIndex: 2,
+          syncOffset: { enabled: true, offsetMicros: 6_000_000 },
+        }),
+      );
+    });
+
+    const unavailable = document.querySelector<HTMLElement>(
+      '[data-slot="audio-unavailable-region"]',
+    );
+
+    expect(unavailable).toHaveStyle({ left: "0%", right: "0%" });
+    const interaction = document.querySelector<HTMLElement>(
+      '[data-slot="audio-sync-interaction"]',
+    )!;
+
+    vi.spyOn(interaction, "getBoundingClientRect").mockReturnValue({
+      bottom: 50,
+      height: 50,
+      left: 100,
+      right: 1_100,
+      top: 0,
+      width: 1_000,
+      toJSON: () => ({}),
+    } as DOMRect);
+    fireEvent.click(interaction.querySelector("canvas")!, { button: 0, clientX: 600 });
+
+    expect(await screen.findByRole("button", { name: "Reset Sync Offset" })).toBeInTheDocument();
+    expect(document.querySelector('[data-slot="audio-sync-temporary-marker"]')).toHaveStyle({
+      left: "50%",
+    });
+  });
+
+  it("shows a reset action and confirms resetting an offset-created unavailable region", async () => {
+    const user = userEvent.setup();
+    const { store } = renderRow();
+    act(() => {
+      store.dispatch(
+        audioTrackSyncOffsetChanged({
+          streamIndex: 2,
+          syncOffset: { enabled: true, offsetMicros: 1_500_000 },
+        }),
+      );
+    });
+    const interaction = document.querySelector<HTMLElement>(
+      '[data-slot="audio-sync-interaction"]',
+    )!;
+
+    vi.spyOn(interaction, "getBoundingClientRect").mockReturnValue({
+      bottom: 50,
+      height: 50,
+      left: 100,
+      right: 1_100,
+      top: 0,
+      width: 1_000,
+      x: 100,
+      y: 0,
+      toJSON: () => ({}),
+    });
+
+    const canvas = interaction.querySelector("canvas")!;
+    fireEvent.pointerMove(canvas, { clientX: 300, clientY: 25, pointerType: "mouse" });
+    const tooltip = await screen.findByRole("tooltip");
+    expect(tooltip).toHaveTextContent("Reset Sync Offset");
+    const stripedRegion = document.querySelector<HTMLElement>(
+      '[data-slot="audio-unavailable-region"]',
+    )!;
+
+    expect(stripedRegion).toHaveStyle({ left: "0%", right: "70%" });
+    expect(stripedRegion.style.backgroundImage).toContain("repeating-linear-gradient");
+    expect(
+      document.querySelector<HTMLElement>("[data-slot='audio-unavailable-reset-hover']"),
+    ).toHaveStyle({ left: "0%", right: "70%" });
+
+    fireEvent.click(canvas, { button: 0, clientX: 300 });
+    const confirm = await screen.findByRole("button", { name: "Reset Sync Offset" });
+    expect(document.activeElement).toBe(confirm);
+    expect(store.getState().audio.tracks[0]?.processing.syncOffset?.offsetMicros).toBe(1_500_000);
+
+    await user.keyboard("{Enter}");
+    await waitFor(() =>
+      expect(store.getState().audio.tracks[0]?.processing.syncOffset).toEqual({
+        enabled: true,
+        offsetMicros: 0,
+      }),
+    );
+    expect(document.querySelector('[data-slot="audio-sync-temporary-marker"]')).toBeNull();
+  });
+
+  it("leaves the offset unchanged when reset is canceled or dismissed with Escape", async () => {
+    const user = userEvent.setup();
+    const { store } = renderRow();
+    act(() => {
+      store.dispatch(
+        audioTrackSyncOffsetChanged({
+          streamIndex: 2,
+          syncOffset: { enabled: true, offsetMicros: -1_000_000 },
+        }),
+      );
+    });
+    const interaction = document.querySelector<HTMLElement>(
+      '[data-slot="audio-sync-interaction"]',
+    )!;
+
+    vi.spyOn(interaction, "getBoundingClientRect").mockReturnValue({
+      bottom: 50,
+      height: 50,
+      left: 100,
+      right: 1_100,
+      top: 0,
+      width: 1_000,
+      x: 100,
+      y: 0,
+      toJSON: () => ({}),
+    });
+    const canvas = interaction.querySelector("canvas")!;
+
+    fireEvent.pointerMove(canvas, { clientX: 1_000, clientY: 25, pointerType: "mouse" });
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Reset Sync Offset");
+    fireEvent.click(canvas, { button: 0, clientX: 1_000 });
+    await user.click(await screen.findByRole("button", { name: "Cancel" }));
+    expect(store.getState().audio.tracks[0]?.processing.syncOffset?.offsetMicros).toBe(-1_000_000);
+    expect(document.querySelector('[data-slot="audio-sync-temporary-marker"]')).toBeNull();
+
+    fireEvent.pointerMove(canvas, { clientX: 1_000, clientY: 25, pointerType: "mouse" });
+    fireEvent.click(canvas, { button: 0, clientX: 1_000 });
+    await screen.findByRole("button", { name: "Reset Sync Offset" });
+    await user.keyboard("{Escape}");
+    expect(store.getState().audio.tracks[0]?.processing.syncOffset?.offsetMicros).toBe(-1_000_000);
+    expect(document.querySelector('[data-slot="audio-sync-temporary-marker"]')).toBeNull();
+  });
+
+  it("does not offer reset for natural gaps or a disabled nonzero offset", () => {
+    const { store } = renderRow({
+      audioDurationMicros: 3_000_000,
+      audioStartTimeMicros: 1_000_000,
+    });
+
+    act(() => {
+      store.dispatch(
+        audioTrackSyncOffsetChanged({
+          streamIndex: 2,
+          syncOffset: { enabled: false, offsetMicros: 1_000_000 },
+        }),
+      );
+    });
+    const interaction = document.querySelector<HTMLElement>(
+      '[data-slot="audio-sync-interaction"]',
+    )!;
+
+    vi.spyOn(interaction, "getBoundingClientRect").mockReturnValue({
+      bottom: 50,
+      height: 50,
+      left: 100,
+      right: 1_100,
+      top: 0,
+      width: 1_000,
+      x: 100,
+      y: 0,
+      toJSON: () => ({}),
+    });
+    const canvas = interaction.querySelector("canvas")!;
+
+    fireEvent.pointerMove(canvas, { clientX: 200, clientY: 25, pointerType: "mouse" });
+    fireEvent.click(canvas, { button: 0, clientX: 200 });
+
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Reset Sync Offset" })).not.toBeInTheDocument();
+    expect(document.querySelector('[data-slot="audio-unavailable-reset-hover"]')).toBeNull();
+    expect(document.querySelector('[data-slot="audio-sync-temporary-marker"]')).toBeNull();
+    expect(store.getState().audio.tracks[0]?.processing.syncOffset).toEqual({
+      enabled: false,
+      offsetMicros: 1_000_000,
+    });
+  });
+
+  it("leaves non-waveform row clicks available without opening sync confirmation", () => {
+    const { store } = renderRow();
+    const interaction = document.querySelector<HTMLElement>(
+      '[data-slot="audio-sync-interaction"]',
+    )!;
+
+    vi.spyOn(interaction, "getBoundingClientRect").mockReturnValue({
+      bottom: 50,
+      height: 50,
+      left: 100,
+      right: 1_100,
+      top: 0,
+      width: 1_000,
+      x: 100,
+      y: 0,
+      toJSON: () => ({}),
+    });
+
+    fireEvent.pointerMove(interaction, { clientX: 600, pointerType: "mouse" });
+    expect(document.querySelector('[data-slot="audio-sync-ghost-playhead"]')).toHaveStyle({
+      left: "50%",
+    });
+
+    fireEvent.click(interaction, { button: 0, clientX: 600 });
+
+    expect(document.querySelector('[data-slot="audio-sync-temporary-marker"]')).toBeNull();
+    expect(screen.queryByRole("button", { name: "Sync offset" })).not.toBeInTheDocument();
+    expect(store.getState().audio.tracks[0]?.processing.syncOffset).toBeUndefined();
   });
 
   it("draws the waveform in the live PrimaryColor preview", async () => {
@@ -298,7 +714,10 @@ describe("AudioTrackRow", () => {
     const drawnLineCount = lineTo.mock.calls.length;
     act(() => store.dispatch(audioTrackToggled({ streamIndex: 2 })));
     const canvas = document.querySelector<HTMLCanvasElement>("canvas");
-    expect(canvas?.parentElement).toHaveAttribute("data-enabled", "false");
+    expect(canvas?.closest('[data-slot="audio-sync-interaction"]')).toHaveAttribute(
+      "data-enabled",
+      "false",
+    );
     expect(lineTo).toHaveBeenCalledTimes(drawnLineCount);
   });
 

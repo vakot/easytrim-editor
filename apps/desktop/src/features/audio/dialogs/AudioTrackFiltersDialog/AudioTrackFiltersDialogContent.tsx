@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
 
 import { Library, LibraryContent, LibraryPage } from "@/components/library";
+import { audioSyncOffsetRange } from "@/domain/audio-processing";
 
 import { useAudioTrackController } from "../../hooks/useAudioTrackController";
 import { audioTrackDisplayName } from "../../lib/audio-track-name.utils";
@@ -42,15 +43,29 @@ function AudioTrackFiltersDialogContent({
 }: AudioTrackFiltersDialogContentProps) {
   const { t } = useTranslation();
   const dialogScope = useAudioTrackFiltersDialogScope(undefined);
-  const { applyFilters, stream, track, trackNumber } = useAudioTrackController(streamIndex);
-  const [draft, dispatch] = useReducer(
-    audioFiltersDraftReducer,
-    track?.processing.filters ?? [],
-    createAudioFiltersDraft,
+  const { applyFilters, durationMicros, stream, track, trackNumber } =
+    useAudioTrackController(streamIndex);
+
+  const syncOffsetRange = useMemo(
+    () => audioSyncOffsetRange(durationMicros, stream?.startTimeMicros, stream?.durationMicros),
+    [durationMicros, stream?.durationMicros, stream?.startTimeMicros],
   );
 
-  const draftContext = useMemo(() => ({ dispatch, draft }), [draft]);
-  useAudioFilterPreview(streamIndex, draft);
+  const [draft, dispatch] = useReducer(
+    audioFiltersDraftReducer,
+    {
+      filters: track?.processing.filters ?? [],
+      syncOffset: track?.processing.syncOffset,
+    },
+    ({ filters, syncOffset }) => createAudioFiltersDraft(filters, syncOffset),
+  );
+
+  const draftContext = useMemo(
+    () => ({ dispatch, draft, syncOffsetRange }),
+    [draft, syncOffsetRange],
+  );
+
+  useAudioFilterPreview(streamIndex, draft, syncOffsetRange);
 
   if (!track || !stream) return null;
 
@@ -60,9 +75,12 @@ function AudioTrackFiltersDialogContent({
     t("audio.tracks.defaultName", { number: trackNumber }),
   );
 
-  const valid = isAudioFiltersDraftValid(draft);
+  const valid = isAudioFiltersDraftValid(draft, syncOffsetRange);
   const dirty = isAudioFiltersDraftDirty(draft);
-  const selected = draft.filters.find((filter) => filter.id === draft.selectedId);
+  const selected =
+    draft.selectedId === "audio-sync-offset" && draft.syncOffset
+      ? { ...draft.syncOffset, id: draft.selectedId }
+      : draft.filters.find((filter) => filter.id === draft.selectedId);
 
   return (
     <AudioFiltersDraftContext.Provider value={draftContext}>
@@ -85,7 +103,7 @@ function AudioTrackFiltersDialogContent({
               {/* Keyed per instance so the previous page unmounts instead of staying hidden while
                   this one loads. Only this area waits; the list, footer, and preview keep running. */}
               <Suspense fallback={<AudioFilterPageFallback />} key={selected.id}>
-                <AudioFilterPage filter={selected} />
+                <AudioFilterPage filter={selected} syncOffsetRange={syncOffsetRange} />
               </Suspense>
             </LibraryPage>
           ) : (
@@ -116,7 +134,7 @@ function AudioTrackFiltersDialogContent({
           <Button
             disabled={!dirty || !valid}
             onClick={() => {
-              applyFilters(draft.filters);
+              applyFilters(draft.filters, draft.syncOffset);
               onClose();
             }}
             type="button"

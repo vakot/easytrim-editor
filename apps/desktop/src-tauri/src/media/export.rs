@@ -312,6 +312,13 @@ pub fn build_fast_arguments_with_chapters(
 
     let mut arguments =
         common_input_arguments_with_chapters(source_path, &request.trim, chapter_metadata_path);
+    let audio_input_index = append_processed_audio_input(
+        &mut arguments,
+        source_path,
+        audio_tracks_need_reencode(&request.audio_tracks)
+            || (request.merge_audio && request.audio_tracks.len() > 1),
+    )?;
+
     arguments.extend([
         OsString::from("-map"),
         OsString::from(format!("0:{}", source.video.stream_index)),
@@ -326,7 +333,13 @@ pub fn build_fast_arguments_with_chapters(
     } else if request.merge_audio && request.audio_tracks.len() > 1 {
         arguments.extend([
             OsString::from("-filter_complex"),
-            OsString::from(audio_filter_graph(&request.audio_tracks, true)?),
+            OsString::from(full_source_audio_graph(
+                source,
+                &request.audio_tracks,
+                &request.trim,
+                true,
+                audio_input_index,
+            )?),
             OsString::from("-map"),
             OsString::from("[aout]"),
             OsString::from("-c:v"),
@@ -341,7 +354,13 @@ pub fn build_fast_arguments_with_chapters(
     } else if audio_tracks_need_reencode(&request.audio_tracks) {
         arguments.extend([
             OsString::from("-filter_complex"),
-            OsString::from(audio_filter_graph(&request.audio_tracks, false)?),
+            OsString::from(full_source_audio_graph(
+                source,
+                &request.audio_tracks,
+                &request.trim,
+                false,
+                audio_input_index,
+            )?),
             OsString::from("-c:v"),
             OsString::from("copy"),
             OsString::from("-c:a"),
@@ -530,11 +549,24 @@ pub fn build_audio_arguments(
     }
 
     let mut arguments = common_input_arguments(source_path, &request.trim);
+    let audio_input_index = append_processed_audio_input(
+        &mut arguments,
+        source_path,
+        audio_tracks_need_reencode(&request.audio_tracks)
+            || (request.merge_audio && request.audio_tracks.len() > 1),
+    )?;
+
     let merge = request.merge_audio && request.audio_tracks.len() > 1;
     if merge {
         arguments.extend([
             OsString::from("-filter_complex"),
-            OsString::from(audio_filter_graph(&request.audio_tracks, true)?),
+            OsString::from(full_source_audio_graph(
+                source,
+                &request.audio_tracks,
+                &request.trim,
+                true,
+                audio_input_index,
+            )?),
             OsString::from("-map"),
             OsString::from("[aout]"),
             OsString::from("-ac"),
@@ -543,7 +575,13 @@ pub fn build_audio_arguments(
     } else if audio_tracks_need_reencode(&request.audio_tracks) {
         arguments.extend([
             OsString::from("-filter_complex"),
-            OsString::from(audio_filter_graph(&request.audio_tracks, false)?),
+            OsString::from(full_source_audio_graph(
+                source,
+                &request.audio_tracks,
+                &request.trim,
+                false,
+                audio_input_index,
+            )?),
         ]);
         for index in 0..request.audio_tracks.len() {
             arguments.extend([
@@ -630,6 +668,13 @@ pub fn build_optimized_arguments_with_chapters(
 
     let mut arguments =
         common_input_arguments_with_chapters(source_path, &request.trim, chapter_metadata_path);
+    let audio_input_index = append_processed_audio_input(
+        &mut arguments,
+        source_path,
+        audio_tracks_need_reencode(&request.audio_tracks)
+            || (request.merge_audio && request.audio_tracks.len() > 1),
+    )?;
+
     arguments.extend([
         OsString::from("-map"),
         OsString::from(format!("0:{}", source.video.stream_index)),
@@ -637,7 +682,13 @@ pub fn build_optimized_arguments_with_chapters(
     if request.merge_audio && request.audio_tracks.len() > 1 {
         arguments.extend([
             OsString::from("-filter_complex"),
-            OsString::from(audio_filter_graph(&request.audio_tracks, true)?),
+            OsString::from(full_source_audio_graph(
+                source,
+                &request.audio_tracks,
+                &request.trim,
+                true,
+                audio_input_index,
+            )?),
             OsString::from("-map"),
             OsString::from("[aout]"),
             OsString::from("-ac"),
@@ -646,7 +697,13 @@ pub fn build_optimized_arguments_with_chapters(
     } else if audio_tracks_need_reencode(&request.audio_tracks) {
         arguments.extend([
             OsString::from("-filter_complex"),
-            OsString::from(audio_filter_graph(&request.audio_tracks, false)?),
+            OsString::from(full_source_audio_graph(
+                source,
+                &request.audio_tracks,
+                &request.trim,
+                false,
+                audio_input_index,
+            )?),
         ]);
         for index in 0..request.audio_tracks.len() {
             arguments.extend([
@@ -878,6 +935,28 @@ fn command_preview(arguments: Vec<OsString>) -> String {
         .join(" ")
 }
 
+/// Adds the unseeked audio input before output options, leaving chapter input indexes intact.
+fn append_processed_audio_input(
+    arguments: &mut Vec<OsString>,
+    source_path: &Path,
+    needed: bool,
+) -> Result<usize, AppError> {
+    let index = arguments.iter().filter(|arg| *arg == "-i").count();
+    if needed {
+        let duration_index = arguments
+            .iter()
+            .position(|arg| arg == "-t")
+            .ok_or_else(|| {
+                AppError::invalid_request(AppErrorMessageId::ExportSelectedExportRangeIsInvalid)
+            })?;
+        arguments.splice(
+            duration_index..duration_index,
+            [OsString::from("-i"), source_path.as_os_str().to_owned()],
+        );
+    }
+    Ok(index)
+}
+
 fn common_input_arguments(source_path: &Path, trim: &TrimSelection) -> Vec<OsString> {
     let duration = (trim.end_micros - trim.start_micros) as f64 / MICROS_PER_SECOND;
     vec![
@@ -1018,6 +1097,15 @@ pub(crate) fn validate_audio_track_selections(
             ));
         }
         validate_track_volume(track.volume)?;
+        if track
+            .sync_offset
+            .as_ref()
+            .is_some_and(|offset| offset.offset_micros.unsigned_abs() > 9_007_199_254_740_991)
+        {
+            return Err(super::audio_filters::model::invalid_chain(
+                "the audio offset is invalid",
+            ));
+        }
         compile_chain(&track.chain.filters, &track.chain.loudness_measurements)?;
     }
     Ok(())
@@ -1213,52 +1301,79 @@ fn effective_transform(
     )
 }
 
-fn audio_tracks_need_reencode(audio_tracks: &[AudioTrackSelection]) -> bool {
-    audio_tracks
-        .iter()
-        .any(AudioTrackSelection::needs_processing)
-}
-
-pub(crate) fn audio_filter_graph(
-    audio_tracks: &[AudioTrackSelection],
+/// Audio is processed from the original origin, then placed and finally cropped to video time.
+/// A separate input preserves the existing video seek/keyframe behavior and chapter input index.
+fn full_source_audio_graph(
+    source: &MediaInfo,
+    tracks: &[AudioTrackSelection],
+    trim: &TrimSelection,
     merge: bool,
+    input_index: usize,
 ) -> Result<String, AppError> {
-    let mut graph = audio_tracks
-        .iter()
-        .enumerate()
-        .map(|(index, track)| {
-            Ok(format!(
-                "[0:{}]{}[audio{index}]",
-                track.stream_index(),
-                track_graph(track)?
-            ))
-        })
-        .collect::<Result<Vec<_>, AppError>>()?;
+    let frames = |micros: i64| -> i64 {
+        ((i128::from(micros) * 48_000 + if micros >= 0 { 500_000 } else { -500_000 }) / 1_000_000)
+            as i64
+    };
+    let start = frames(trim.start_micros);
+    let end = frames(trim.end_micros);
+    let mut graph = Vec::new();
+    for (index, track) in tracks.iter().enumerate() {
+        let audio_stream = source
+            .audio_streams
+            .iter()
+            .find(|stream| stream.stream_index == track.stream_index());
+        let source_end_micros = audio_stream
+            .and_then(|stream| {
+                stream.start_time_micros.unwrap_or_default().checked_add(
+                    stream
+                        .duration_micros
+                        .unwrap_or(source.duration_micros)
+                        .max(0),
+                )
+            })
+            .unwrap_or(source.duration_micros)
+            .max(source.duration_micros);
+        let source_frames = frames(source_end_micros);
+        let offset = track
+            .sync_offset
+            .as_ref()
+            .map_or(0, |offset| offset.effective_micros());
+        let shift = frames(offset);
+        let placement = if shift >= 0 {
+            format!("adelay={shift}S:all=1")
+        } else {
+            format!(
+                "atrim=start_sample={},asetpts=NB_CONSUMED_SAMPLES/SR/TB",
+                -shift
+            )
+        };
+        let chain = compile_chain(&track.chain.filters, &track.chain.loudness_measurements)?;
+        let volume = if track.volume == 1.0 {
+            String::new()
+        } else {
+            format!(",volume={}:precision=double", track.volume)
+        };
+        graph.push(format!(
+            "[{input_index}:{}]{},apad=whole_len={source_frames},atrim=end_sample={source_frames},{placement},apad=whole_len={end},atrim=start_sample={start}:end_sample={end},asetpts=NB_CONSUMED_SAMPLES/SR/TB{volume}[audio{index}]",
+            track.stream_index(), chain.canonical_graph()
+        ));
+    }
     if merge {
-        let inputs = (0..audio_tracks.len())
+        let inputs = (0..tracks.len())
             .map(|index| format!("[audio{index}]"))
             .collect::<String>();
         graph.push(format!(
             "{inputs}amix=inputs={}:duration=longest:dropout_transition=0:normalize=0[aout]",
-            audio_tracks.len()
+            tracks.len()
         ));
     }
     Ok(graph.join(";"))
 }
 
-/// The ordered filters followed by Track Volume, which applies after every filter and before any
-/// mixing.
-fn track_graph(track: &AudioTrackSelection) -> Result<String, AppError> {
-    let chain = compile_chain(&track.chain.filters, &track.chain.loudness_measurements)?;
-    let mut stages = chain.processing_graph().into_iter().collect::<Vec<_>>();
-    if track.volume != 1.0 {
-        stages.push(format!("volume={}:precision=double", track.volume));
-    }
-    Ok(if stages.is_empty() {
-        "anull".to_owned()
-    } else {
-        stages.join(",")
-    })
+fn audio_tracks_need_reencode(audio_tracks: &[AudioTrackSelection]) -> bool {
+    audio_tracks
+        .iter()
+        .any(AudioTrackSelection::needs_processing)
 }
 
 fn parse_arguments(value: &str) -> Result<Vec<OsString>, AppError> {
@@ -1395,20 +1510,26 @@ fn format_seconds_f64(seconds: f64) -> String {
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
     use std::process::Command;
+    use std::{path::Path, sync::atomic::AtomicBool};
 
     use super::{
         AudioExportFormat, AudioExportRequest, AudioTrackMetadataSelection, AudioTrackSelection,
         CropSelection, FastExportRequest, FrameRateSelection, GifDithering, GifExportRequest,
         GifPaletteStatsMode, GifPreset, OptimizedExportRequest, ResolutionSelection, TrimSelection,
-        append_audio_metadata_arguments, audio_filter_graph, build_audio_arguments,
-        build_fast_arguments, build_gif_arguments, build_optimized_arguments,
-        fast_export_output_extensions, gif_command_preview, optimized_command_preview,
+        append_audio_metadata_arguments, build_audio_arguments, build_fast_arguments,
+        build_gif_arguments, build_optimized_arguments, fast_export_output_extensions,
+        full_source_audio_graph, gif_command_preview, optimized_command_preview,
     };
     use crate::error::AppErrorMessageId;
+    use crate::media::audio::{PlaybackChunkRole, decode_playback_chunk};
     use crate::media::audio_filters::model::{
-        AudioChainSelection, AudioFilter, AudioLoudnessAnalysis, FilterMeasurement, fixtures::*,
+        AudioChainSelection, AudioFilter, AudioLoudnessAnalysis, AudioSyncOffset,
+        FilterMeasurement, fixtures::*,
+    };
+    use crate::media::audio_filters::{
+        engine::{AudioProcessingEngine, EngineConfig},
+        test_fixtures::{decode_f32_stereo, fixture_source, max_difference},
     };
     use crate::media::probe::{AudioStream, MediaInfo, VideoStream};
 
@@ -1549,6 +1670,7 @@ mod tests {
         volume: f64,
     ) -> AudioTrackSelection {
         AudioTrackSelection {
+            sync_offset: None,
             chain: AudioChainSelection {
                 stream_index,
                 filters,
@@ -1971,6 +2093,270 @@ mod tests {
                 .windows(2)
                 .any(|pair| pair == ["-disposition:a:0", "+default"])
         );
+    }
+
+    #[test]
+    fn offsets_remain_independent_before_merging_and_bypassed_offsets_allow_copy() {
+        use crate::media::audio_filters::model::AudioSyncOffset;
+        let mut tracks = vec![audio_track(1), audio_track(2)];
+        tracks[0].sync_offset = Some(AudioSyncOffset {
+            enabled: true,
+            offset_micros: 500_000,
+        });
+        tracks[1].sync_offset = Some(AudioSyncOffset {
+            enabled: true,
+            offset_micros: -250_000,
+        });
+        let trim = TrimSelection {
+            start_micros: 1_000_000,
+            end_micros: 3_000_000,
+        };
+        let graph = full_source_audio_graph(&media(), &tracks, &trim, true, 2).unwrap();
+        assert!(graph.starts_with("[2:1]"));
+        assert!(graph.contains("adelay=24000S:all=1"));
+        assert!(graph.contains("[2:2]"));
+        assert!(graph.contains("atrim=start_sample=12000,asetpts="));
+        assert!(graph.ends_with(
+            "[audio0][audio1]amix=inputs=2:duration=longest:dropout_transition=0:normalize=0[aout]"
+        ));
+        for track in &mut tracks {
+            track.sync_offset.as_mut().unwrap().enabled = false;
+        }
+        let args = build_fast_arguments(
+            &media(),
+            &fast_request(tracks),
+            Path::new("source.mkv"),
+            Path::new("out.mkv"),
+        )
+        .unwrap();
+        assert!(!args.iter().any(|arg| arg == "-filter_complex"));
+        assert_eq!(args.iter().filter(|arg| *arg == "-i").count(), 1);
+    }
+
+    #[test]
+    fn sync_offsets_place_original_samples_before_export_trim_and_pad_unavailable_regions() {
+        use crate::media::audio_filters::model::AudioSyncOffset;
+        let directory =
+            std::env::temp_dir().join(format!("easytrim-sync-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&directory).unwrap();
+        let source_path = directory.join("source.wav");
+        let generated = Command::new("ffmpeg")
+            .args([
+                "-v",
+                "error",
+                "-f",
+                "lavfi",
+                "-i",
+                "aevalsrc=0.1+0.1*floor(t):s=48000:d=4:c=stereo",
+                "-c:a",
+                "pcm_f32le",
+                "-y",
+            ])
+            .arg(&source_path)
+            .output()
+            .unwrap();
+        assert!(
+            generated.status.success(),
+            "{}",
+            String::from_utf8_lossy(&generated.stderr)
+        );
+        let mut info = media();
+        info.duration_micros = 4_000_000;
+        info.audio_streams.truncate(1);
+        info.audio_streams[0].stream_index = 0;
+        // Stateful processing must run from the original origin even when placement and trim
+        // select a later region. Compare exported samples against one whole-source render.
+        let stateful = vec![high_pass("hp", 80.0), gain("g", -3.0)];
+        let chain = crate::media::audio_filters::compiler::compile_chain(&stateful, &[]).unwrap();
+        let reference = Command::new("ffmpeg")
+            .args(["-v", "error", "-i"])
+            .arg(&source_path)
+            .args([
+                "-af",
+                &format!("{},pan=mono|c0=c0", chain.canonical_graph()),
+                "-f",
+                "f32le",
+                "pipe:1",
+            ])
+            .output()
+            .unwrap();
+        assert!(reference.status.success());
+        let reference: Vec<_> = reference
+            .stdout
+            .chunks_exact(4)
+            .map(|b| f32::from_le_bytes(b.try_into().unwrap()))
+            .collect();
+        for (offset_micros, enabled) in [
+            (500_000, true),
+            (-500_000, true),
+            (5_000_000, true),
+            (-5_000_000, true),
+            (500_000, false),
+        ] {
+            let output_path = directory.join(format!("out-{offset_micros}-{enabled}.wav"));
+            let mut track = processed_track(0, stateful.clone(), vec![], 1.0);
+            track.sync_offset = Some(AudioSyncOffset {
+                enabled,
+                offset_micros,
+            });
+            let request = AudioExportRequest {
+                trim: TrimSelection {
+                    start_micros: 1_000_000,
+                    end_micros: 3_000_000,
+                },
+                audio_tracks: vec![track],
+                ..audio_request(AudioExportFormat::Wav, false)
+            };
+            let arguments =
+                build_audio_arguments(&info, &request, &source_path, &output_path).unwrap();
+            let exported = Command::new("ffmpeg")
+                .args(["-v", "error"])
+                .args(arguments)
+                .output()
+                .unwrap();
+            assert!(
+                exported.status.success(),
+                "{}",
+                String::from_utf8_lossy(&exported.stderr)
+            );
+            let decoded = Command::new("ffmpeg")
+                .args(["-v", "error", "-i"])
+                .arg(&output_path)
+                .args(["-af", "pan=mono|c0=c0", "-f", "f32le", "pipe:1"])
+                .output()
+                .unwrap();
+            assert!(decoded.status.success());
+            let samples: Vec<_> = decoded
+                .stdout
+                .chunks_exact(4)
+                .map(|b| f32::from_le_bytes(b.try_into().unwrap()))
+                .collect();
+            assert_eq!(samples.len(), 96_000);
+            for frame in [0, 23_999, 24_001, 47_999, 48_001, 71_999, 72_001, 95_999] {
+                let source_frame = 48_000 + frame as i64
+                    - if enabled {
+                        offset_micros * 48_000 / 1_000_000
+                    } else {
+                        0
+                    };
+                let expected = usize::try_from(source_frame)
+                    .ok()
+                    .and_then(|frame| reference.get(frame))
+                    .copied()
+                    .unwrap_or(0.0) as f64;
+                assert!(
+                    (f64::from(samples[frame]) - expected).abs() < 0.0001,
+                    "offset {offset_micros} at {frame}: {} != {expected}",
+                    samples[frame]
+                );
+            }
+        }
+        std::fs::remove_dir_all(directory).unwrap();
+    }
+
+    #[test]
+    fn negative_sync_offset_keeps_long_audio_tail_equal_in_preview_and_export() {
+        let directory =
+            std::env::temp_dir().join(format!("easytrim-long-sync-{}", uuid::Uuid::new_v4()));
+        std::fs::create_dir_all(&directory).unwrap();
+        let source_path = directory.join("source.wav");
+        let generated = Command::new("ffmpeg")
+            .args([
+                "-v",
+                "error",
+                "-f",
+                "lavfi",
+                "-i",
+                "aevalsrc=0.2*sin(2*PI*440*t)+0.3*gte(t\\,60):s=48000:d=65:c=stereo",
+                "-c:a",
+                "pcm_f32le",
+                "-y",
+            ])
+            .arg(&source_path)
+            .output()
+            .unwrap();
+        assert!(
+            generated.status.success(),
+            "{}",
+            String::from_utf8_lossy(&generated.stderr)
+        );
+
+        let mut source = fixture_source(&source_path, 60_000_000);
+        let media = source.media.as_mut().unwrap();
+        media.audio_streams[0].duration_micros = Some(65_000_000);
+        let track = AudioTrackSelection {
+            sync_offset: Some(AudioSyncOffset {
+                enabled: true,
+                offset_micros: -5_000_000,
+            }),
+            chain: AudioChainSelection {
+                stream_index: 0,
+                filters: Vec::new(),
+                loudness_measurements: Vec::new(),
+            },
+            volume: 1.0,
+        };
+        let request = AudioExportRequest {
+            trim: TrimSelection {
+                start_micros: 55_000_000,
+                end_micros: 60_000_000,
+            },
+            audio_tracks: vec![track],
+            ..audio_request(AudioExportFormat::Wav, false)
+        };
+        let output_path = directory.join("out.wav");
+        let arguments = build_audio_arguments(
+            source.media.as_ref().unwrap(),
+            &request,
+            &source_path,
+            &output_path,
+        )
+        .unwrap();
+        let exported = Command::new("ffmpeg")
+            .args(["-v", "error"])
+            .args(arguments)
+            .output()
+            .unwrap();
+        assert!(
+            exported.status.success(),
+            "{}",
+            String::from_utf8_lossy(&exported.stderr)
+        );
+        let exported_samples = decode_f32_stereo(&[
+            std::ffi::OsString::from("-i"),
+            output_path.as_os_str().to_owned(),
+        ]);
+
+        let engine = AudioProcessingEngine::new(EngineConfig::default());
+        let mut preview_samples = Vec::new();
+        for start_micros in [60_000_000, 62_000_000, 64_000_000] {
+            let duration_micros = (65_000_000 - start_micros).min(2_000_000);
+            preview_samples.extend(
+                decode_playback_chunk(
+                    &engine,
+                    &source,
+                    &request.audio_tracks[0].chain,
+                    start_micros,
+                    duration_micros,
+                    PlaybackChunkRole::default(),
+                    &AtomicBool::new(false),
+                )
+                .unwrap()
+                .chunks_exact(4)
+                .map(|sample| f32::from_le_bytes(sample.try_into().unwrap())),
+            );
+        }
+        assert_eq!(exported_samples.len(), 5 * 48_000 * 2);
+        assert_eq!(preview_samples.len(), exported_samples.len());
+        let difference = max_difference(&preview_samples, &exported_samples);
+        assert!(
+            difference < 0.00002,
+            "preview and export differ on the shifted audio tail: max {difference}; preview {:?}; export {:?}",
+            &preview_samples[..10],
+            &exported_samples[..10]
+        );
+
+        std::fs::remove_dir_all(directory).unwrap();
     }
 
     /// The exported length of a processed track trimmed to the end of its source, in frames.
@@ -2567,7 +2953,8 @@ mod tests {
         assert!(
             values
                 .iter()
-                .any(|value| value == "[0:2]volume=2:precision=double[audio0]")
+                .any(|value| value.starts_with("[1:2]aresample=48000")
+                    && value.ends_with("volume=2:precision=double[audio0]"))
         );
         assert!(values.windows(2).any(|pair| pair == ["-map", "[audio0]"]));
         assert!(values.windows(2).any(|pair| pair == ["-c:v", "copy"]));
@@ -2598,9 +2985,9 @@ mod tests {
             .expect("request is valid"),
         );
 
-        assert!(graph.contains("[0:1]anull[audio0]"));
+        assert!(graph.contains("[1:1]aresample=48000"));
         assert!(graph.contains(
-            "[0:2]aresample=48000:async=1:first_pts=0,volume=-3dB:precision=double,volume=4dB:precision=double,volume=2dB:precision=double,volume=0.5:precision=double[audio1]"
+            "[1:2]aresample=48000:async=1:first_pts=0,volume=-3dB:precision=double,volume=4dB:precision=double,volume=2dB:precision=double"
         ));
     }
 
@@ -2615,14 +3002,22 @@ mod tests {
             ),
             processed_track(4, vec![limiter("lim", -2.0)], Vec::new(), 3.0),
         ];
-        let graph = audio_filter_graph(&tracks, true).expect("chains compile");
+        let graph = full_source_audio_graph(
+            &media(),
+            &tracks,
+            &TrimSelection {
+                start_micros: 0,
+                end_micros: 2_000_000,
+            },
+            true,
+            1,
+        )
+        .expect("chains compile");
 
         assert!(graph.contains(
-            "[0:2]aresample=48000:async=1:first_pts=0,volume=6dB:precision=double,alimiter=limit=0.891251:attack=5:release=50:level=0:latency=1,volume=0.25:precision=double[audio0]"
+            "[1:2]aresample=48000:async=1:first_pts=0,volume=6dB:precision=double,alimiter=limit=0.891251:attack=5:release=50:level=0:latency=1"
         ));
-        assert!(graph.contains(
-            "alimiter=limit=0.794328:attack=5:release=50:level=0:latency=1,volume=3:precision=double[audio1]"
-        ));
+        assert!(graph.contains("volume=3:precision=double[audio1]"));
         assert!(graph.ends_with(
             "[audio0][audio1]amix=inputs=2:duration=longest:dropout_transition=0:normalize=0[aout]"
         ));
@@ -2640,7 +3035,7 @@ mod tests {
             Vec::new(),
             1.0,
         );
-        let expected = "[0:1]aresample=48000:async=1:first_pts=0,apad=pad_len=1200,afftdn=nr=12:nf=-35,atrim=start_sample=1200,asetpts=PTS-STARTPTS,highpass=f=100,alimiter=limit=0.891251:attack=5:release=50:level=0:latency=1[audio0]";
+        let expected = "[1:1]aresample=48000:async=1:first_pts=0,apad=pad_len=1200,afftdn=nr=12:nf=-35,atrim=start_sample=1200,asetpts=PTS-STARTPTS,highpass=f=100,alimiter=limit=0.891251:attack=5:release=50:level=0:latency=1,apad=whole_len=480000,atrim=end_sample=480000,adelay=0S:all=1,apad=whole_len=96000,atrim=start_sample=0:end_sample=96000,asetpts=NB_CONSUMED_SAMPLES/SR/TB[audio0]";
         let fast = filter_graph(
             &build_fast_arguments(
                 &media(),
@@ -2737,9 +3132,7 @@ mod tests {
         assert!(values.windows(2).any(|pair| pair == ["-c:v", "copy"]));
         assert!(values.windows(2).any(|pair| pair == ["-c:a", "aac"]));
         assert!(values.iter().any(|value| {
-            value.contains(
-                "[0:1]aresample=48000:async=1:first_pts=0,volume=6dB:precision=double[audio0]",
-            )
+            value.contains("[1:1]aresample=48000:async=1:first_pts=0,volume=6dB:precision=double")
         }));
     }
     #[test]

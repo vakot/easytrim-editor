@@ -17,6 +17,7 @@ import {
   audioTrackFiltersApplied,
   audioTrackLoudnessAnalysisReady,
   audioTrackLoudnessAnalysisStarted,
+  audioTrackSyncOffsetChanged,
   audioTrackToggled,
   audioTrackVolumeChanged,
   initialAudioState,
@@ -35,6 +36,54 @@ function readyAudio() {
 }
 
 describe("audio slice", () => {
+  it("keeps offset per stream through bypass, filter removal, snapshots and restoration", () => {
+    const ready = audioReducer(
+      readyAudio(),
+      audioTrackFiltersApplied({
+        streamIndex: 2,
+        filters: [{ enabled: true, id: "g", type: "gain", gainDb: 3 }],
+      }),
+    );
+
+    const offset = { enabled: true, offsetMicros: -500_000 };
+    let audio = audioReducer(
+      ready,
+      audioTrackSyncOffsetChanged({ streamIndex: 2, syncOffset: offset }),
+    );
+
+    expect(audio.tracks[1]).toBe(ready.tracks[1]);
+    expect(audio.tracks[0]?.waveform).toBe(ready.tracks[0]?.waveform);
+    expect(audio.tracks[0]?.loudnessAnalysis).toBe(ready.tracks[0]?.loudnessAnalysis);
+    audio = audioReducer(audio, audioTrackToggled({ streamIndex: 2 }));
+    audio = audioReducer(audio, audioTrackFiltersApplied({ streamIndex: 2, filters: [] }));
+    const snapshot = createEditorSnapshot({
+      source: firstSource,
+      crop: null,
+      trim: { kind: "full-source" },
+      audioTracks: audio.tracks,
+    });
+
+    const restored = audioReducer(
+      initialAudioState,
+      sourceReady({ loadToken: 1, media: mediaWithAudio(firstSource.sourcePath), snapshot }),
+    );
+
+    expect(restored.tracks[0]?.processing.syncOffset).toEqual(offset);
+    const bypassed = audioReducer(
+      restored,
+      audioTrackSyncOffsetChanged({ streamIndex: 2, syncOffset: { ...offset, enabled: false } }),
+    );
+
+    expect(bypassed.tracks[0]?.processing.syncOffset?.offsetMicros).toBe(-500_000);
+    const removed = audioReducer(
+      bypassed,
+      audioTrackSyncOffsetChanged({ streamIndex: 2, syncOffset: null }),
+    );
+
+    expect(removed.tracks[0]?.processing.syncOffset).toBeUndefined();
+    expect(audioReducer(restored, sourceSelected({ source: firstSource })).tracks).toEqual([]);
+  });
+
   it("initializes tracks and keeps audio configuration source-bound", () => {
     const ready = readyAudio();
     const adjusted = audioReducer(ready, audioTrackVolumeChanged({ streamIndex: 2, volume: 3.5 }));
@@ -160,7 +209,7 @@ describe("audio slice", () => {
     ]);
   });
 
-  it("keeps analyses when only Track Volume changes and clears trim-bound results", () => {
+  it("keeps full-source analyses when volume or trim changes", () => {
     let state = readyAudio();
     state = audioReducer(
       state,
@@ -214,7 +263,7 @@ describe("audio slice", () => {
       }),
     );
 
-    expect(trimmed.tracks[0]?.loudnessAnalysis).toEqual({ status: "idle" });
+    expect(trimmed.tracks[0]?.loudnessAnalysis).toEqual(adjusted.tracks[0]?.loudnessAnalysis);
   });
 
   it("ignores Track Volume outside 0-500%", () => {
@@ -515,7 +564,7 @@ describe("audio filter preview", () => {
     expect(changedBeforeApply.tracks[0]?.loudnessAnalysis).toEqual({ status: "idle" });
   });
 
-  it("ends with the source and drops draft measurements when the trim changes", () => {
+  it("ends with the source and preserves draft measurements when the trim changes", () => {
     let audio = audioReducer(
       readyAudio(),
       audioFilterPreviewStarted({ id: "preview", streamIndex: 2 }),
@@ -540,7 +589,7 @@ describe("audio filter preview", () => {
       }),
     );
 
-    expect(trimmed.filterPreview?.loudnessAnalysis).toEqual({ status: "idle" });
+    expect(trimmed.filterPreview?.loudnessAnalysis).toEqual(audio.filterPreview?.loudnessAnalysis);
     expect(audioReducer(audio, sourceSelected({ source: firstSource })).filterPreview).toBeNull();
   });
 });

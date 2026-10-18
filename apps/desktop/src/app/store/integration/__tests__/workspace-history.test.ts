@@ -13,6 +13,7 @@ import {
   audioTrackDefaultChanged,
   audioTrackFiltersApplied,
   audioTrackMetadataChanged,
+  audioTrackSyncOffsetChanged,
   audioTrackToggled,
   audioTrackVolumeChanged,
   selectAudioTracks,
@@ -67,6 +68,20 @@ const flush = async () => {
 };
 
 describe("workspace history editor integration", () => {
+  it("undoes and redoes offset placement without changing the signal chain", async () => {
+    const store = setup();
+    const syncOffset = { enabled: true, offsetMicros: 750_000 };
+    store.dispatch(audioTrackSyncOffsetChanged({ streamIndex: 2, syncOffset }));
+    store.dispatch(commitActiveEditingInstanceDraft());
+    await flush();
+    expect(await store.dispatch(undoWorkspaceHistory())).toBe(true);
+    expect(store.getState().audio.tracks[0]?.processing.syncOffset).toBeUndefined();
+    expect(await store.dispatch(redoWorkspaceHistory())).toBe(true);
+    expect(store.getState().audio.tracks[0]?.processing.syncOffset).toEqual(syncOffset);
+    expect(store.getState().audio.tracks[0]?.processing.filters).toEqual([]);
+    expect(store.getState().audio.tracks[1]?.processing.syncOffset).toBeUndefined();
+  });
+
   it("records trim and restores it while preserving unrelated runtime state", async () => {
     const store = setup();
     store.dispatch(

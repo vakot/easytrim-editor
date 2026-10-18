@@ -11,8 +11,9 @@ use crate::{
     media::{
         audio::processed_timeline_range,
         audio_filters::{
-            compiler::CompiledChain,
+            compiler::{CANONICAL_SAMPLE_RATE, CompiledChain},
             engine::{AudioProcessingEngine, RenderPurpose, RenderRequest},
+            pcm_cache::FrameRange,
         },
     },
     state::{WaveformArtifact, WaveformSource},
@@ -28,9 +29,10 @@ const AUDIO_ACTIVITY_THRESHOLD_DB: f64 = -50.0;
 static NEXT_DIRECTORY_ID: AtomicU64 = AtomicU64::new(0);
 pub type WaveformGenerationResult = (u32, Option<bool>, Result<WaveformArtifact, AppError>);
 
-/// Reduces the same full-timeline, pre-Track-Volume PCM used by playback. The compiled chain
-/// already contains the measurements for every global-analysis stage. Chunk boundaries never
-/// restart stateful filters, and provisional playback-seek samples are not authoritative here.
+/// Reduces each stream's original interval to a stream-local, pre-Track-Volume envelope. Rendering
+/// starts at the source timeline origin so filters see the complete original stream, including
+/// their state before the audio interval. The compiled chain already contains the measurements
+/// for every global-analysis stage, and chunk boundaries never restart stateful filters.
 pub fn generate_waveforms(
     engine: &AudioProcessingEngine,
     source: &WaveformSource,
@@ -46,14 +48,7 @@ pub fn generate_waveforms(
             AppErrorMessageId::MediaAudioStreamMetadataIsUnavailableForWaveformGeneration,
         )
     })?;
-    let range = processed_timeline_range(media);
-    let frames = range.end - range.start;
-    if frames < u64::from(width) {
-        return Err(AppError::waveform_failed(
-            AppErrorMessageId::MediaWaveformTooFewSamples,
-            None::<String>,
-        ));
-    }
+    let video_range = processed_timeline_range(media);
     let mut results = Vec::with_capacity(stream_indexes.len());
     for &stream_index in stream_indexes {
         let chain = chain_by_stream.get(&stream_index).ok_or_else(|| {
@@ -62,8 +57,46 @@ pub fn generate_waveforms(
             )
         })?;
         let result = (|| {
+            let stream = media
+                .audio_streams
+                .iter()
+                .find(|stream| stream.stream_index == stream_index)
+                .ok_or_else(|| {
+                    AppError::invalid_request(
+                        AppErrorMessageId::MediaAudioStreamMetadataIsUnavailableForWaveformGeneration,
+                    )
+                })?;
+            let stream_start_micros = stream.start_time_micros.unwrap_or_default();
+            let stream_duration_micros = stream
+                .duration_micros
+                .unwrap_or(media.duration_micros)
+                .max(0);
+            let stream_start_frame = signed_micros_to_frames(stream_start_micros);
+            let stream_frames = micros_to_frames(stream_duration_micros as u64);
+            if stream_frames == 0 {
+                return Err(AppError::waveform_failed(
+                    AppErrorMessageId::MediaWaveformTooFewSamples,
+                    None::<String>,
+                ));
+            }
+            let stream_end_frame = stream_start_frame.saturating_add(stream_frames as i64);
+            let content_start_frame = stream_start_frame.max(0) as u64;
+            let content_end_frame = stream_end_frame.max(0) as u64;
+            let range = FrameRange {
+                start: 0,
+                end: video_range.end.max(content_end_frame),
+            };
             let artifact = create_artifact(stream_index)?;
-            let mut reducer = EnvelopeReducer::new(frames, width);
+            let mut reducer = EnvelopeReducer::new(stream_frames, width);
+            if stream_start_frame < 0 {
+                let mut preroll_frames = stream_frames.min(stream_start_frame.unsigned_abs());
+                let silence = vec![0.0; (PCM_BLOCK_FRAMES * 2) as usize];
+                while preroll_frames > 0 {
+                    let count = preroll_frames.min(PCM_BLOCK_FRAMES);
+                    reducer.push(&silence[..(count * 2) as usize]);
+                    preroll_frames -= count;
+                }
+            }
             let mut start = range.start;
             while start < range.end {
                 let count = (range.end - start).min(PCM_BLOCK_FRAMES);
@@ -81,7 +114,14 @@ pub fn generate_waveforms(
                     },
                     &|| waveform_cancelled(source),
                 )?;
-                reducer.push(&samples);
+                let end = start + count;
+                let segment_start = start.max(content_start_frame);
+                let segment_end = end.min(content_end_frame);
+                if segment_end > segment_start {
+                    let sample_start = ((segment_start - start) * 2) as usize;
+                    let sample_end = ((segment_end - start) * 2) as usize;
+                    reducer.push(&samples[sample_start..sample_end]);
+                }
                 start += count;
             }
             if waveform_cancelled(source) {
@@ -104,6 +144,15 @@ pub fn generate_waveforms(
 fn waveform_cancelled(source: &WaveformSource) -> bool {
     source.source.cancellation.load(Ordering::Acquire)
         || source.cancellation.load(Ordering::Acquire)
+}
+
+fn micros_to_frames(micros: u64) -> u64 {
+    ((u128::from(micros) * u128::from(CANONICAL_SAMPLE_RATE) + 500_000) / 1_000_000) as u64
+}
+
+fn signed_micros_to_frames(micros: i64) -> i64 {
+    let magnitude = micros_to_frames(micros.unsigned_abs()).min(i64::MAX as u64) as i64;
+    if micros < 0 { -magnitude } else { magnitude }
 }
 
 /// Column c spans [c * frames / width, (c + 1) * frames / width). Accumulate float peaks
@@ -134,6 +183,7 @@ impl EnvelopeReducer {
     }
 
     fn push(&mut self, samples: &[f32]) {
+        self.finish_columns();
         for frame in samples.chunks_exact(2) {
             for (channel, &value) in frame.iter().enumerate() {
                 let magnitude = f64::from(value).abs();
@@ -143,18 +193,29 @@ impl EnvelopeReducer {
             let mono = (f64::from(frame[0]) + f64::from(frame[1])) * 0.5;
             self.mono_squares += mono * mono;
             self.position += 1;
+            self.finish_columns();
+        }
+    }
+
+    fn finish_columns(&mut self) {
+        while self.column < u64::from(self.width) {
+            let start = self.column * self.frames / u64::from(self.width);
             let end = (self.column + 1) * self.frames / u64::from(self.width);
-            if self.position == end {
-                let start = self.column * self.frames / u64::from(self.width);
+            if self.position < end {
+                break;
+            }
+            if start == end {
+                self.envelope.extend([0; 4]);
+            } else {
                 for channel in 0..2 {
                     let rms = (self.squares[channel] / (end - start) as f64).sqrt();
                     self.envelope.push(scale_amplitude(self.peaks[channel]));
                     self.envelope.push(scale_amplitude(rms));
                 }
-                self.column += 1;
-                self.peaks = [0.0; 2];
-                self.squares = [0.0; 2];
             }
+            self.column += 1;
+            self.peaks = [0.0; 2];
+            self.squares = [0.0; 2];
         }
     }
 
@@ -417,7 +478,7 @@ mod tests {
     }
 
     #[test]
-    fn delayed_stream_keeps_leading_and_trailing_silence_on_the_source_timeline() {
+    fn delayed_stream_waveform_is_local_and_covers_audio_beyond_the_video_duration() {
         let file = super::create_artifact(0).unwrap();
         let mut args: Vec<OsString> = [
             "-v",
@@ -460,8 +521,12 @@ mod tests {
             "{}",
             String::from_utf8_lossy(&output.stderr)
         );
+        let mut active_source = fixture_source(file.path(), 1_000_000);
+        let media = active_source.media.as_mut().unwrap();
+        media.audio_streams[0].start_time_micros = Some(500_000);
+        media.audio_streams[0].duration_micros = Some(2_000_000);
         let source = WaveformSource {
-            source: fixture_source(file.path(), 3_000_000),
+            source: active_source,
             cancellation: Arc::new(AtomicBool::new(false)),
         };
         let chain = compile_chain(&[gain("gain", 6.0)], &[]).unwrap();
@@ -475,9 +540,7 @@ mod tests {
         )
         .unwrap();
         let bins = values(&std::fs::read(result[0].2.as_ref().unwrap().path()).unwrap());
-        assert!(bins[..20 * 4].iter().all(|&value| value == 0));
-        assert!(bins[21 * 4..99 * 4].iter().all(|&value| value >= 126));
-        assert!(bins[101 * 4..].iter().all(|&value| value == 0));
+        assert!(bins.iter().all(|&value| value >= 126));
     }
 
     #[test]
@@ -516,6 +579,18 @@ mod tests {
             [0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 0, 0, 0, 0, 0, 0]
         );
         assert!(reducer.has_signal());
+        assert!(reducer.write(&mut Vec::new()).is_ok());
+    }
+
+    #[test]
+    fn short_streams_fill_empty_waveform_columns_with_silence() {
+        let mut reducer = EnvelopeReducer::new(2, 4);
+        reducer.push(&[0.5, 0.5, 0.25, 0.25]);
+
+        assert_eq!(
+            reducer.envelope,
+            [0, 0, 0, 0, 128, 128, 128, 128, 0, 0, 0, 0, 64, 64, 64, 64]
+        );
         assert!(reducer.write(&mut Vec::new()).is_ok());
     }
 

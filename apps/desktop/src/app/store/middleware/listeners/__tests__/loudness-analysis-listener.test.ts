@@ -84,7 +84,7 @@ describe("automatic loudness measurement", () => {
     expect(mocks.analyzeAudioLoudness).toHaveBeenCalledOnce();
   });
 
-  it("coalesces consecutive trim edits into one measurement", async () => {
+  it("measures the original stream once regardless of consecutive trim edits", async () => {
     const store = createStore();
     store.dispatch(audioTrackFiltersApplied({ filters: [normalization], streamIndex: 2 }));
     for (const endMicros of [3_000_000, 3_500_000, 4_000_000]) {
@@ -97,7 +97,7 @@ describe("automatic loudness measurement", () => {
 
     expect(mocks.analyzeAudioLoudness).toHaveBeenCalledOnce();
     expect(mocks.analyzeAudioLoudness.mock.calls[0]?.[0].trim).toEqual({
-      endMicros: 4_000_000,
+      endMicros: 5_000_000,
       startMicros: 0,
     });
   });

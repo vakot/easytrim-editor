@@ -1,10 +1,12 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { memo, useMemo, useState } from "react";
+import { memo, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -12,6 +14,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
+import { useAppSelector } from "@/app/store/redux-hooks";
+import { selectAudioFilterPreview } from "@/app/store/slices/audio-slice";
+import {
+  audioSyncOffsetRange,
+  audioTimelineBoundaries,
+  effectiveAudioOffsetMicros,
+} from "@/domain/audio-processing";
+import { useTimelinePlayback } from "@/features/playback";
 
 import { AudioTrackFiltersDialog } from "../../dialogs/AudioTrackFiltersDialog";
 import { AudioTrackMetadataDialog } from "../../dialogs/AudioTrackMetadataDialog";
@@ -93,8 +105,20 @@ function AudioTrackRowWaveform({
   streamIndex: number;
 }) {
   const { displayMode } = useAudioTrackDisplayMode();
-  const { durationMicros, stream, track, trackColor, trackNumber } =
+  const { t } = useTranslation();
+  const { changeSyncOffset, durationMicros, stream, track, trackColor, trackNumber } =
     useAudioTrackController(streamIndex);
+
+  const filterPreview = useAppSelector(selectAudioFilterPreview);
+  const { getPositionMicros } = useTimelinePlayback();
+  const confirmButtonRef = useRef<HTMLButtonElement>(null);
+  const [hoveredPosition, setHoveredPosition] = useState<number | null>(null);
+  const [hoveredResetRangeKey, setHoveredResetRangeKey] = useState<string | null>(null);
+  const [syncMarker, setSyncMarker] = useState<{
+    action: "reset" | "sync";
+    leftPercent: number;
+    offsetMicros: number;
+  } | null>(null);
 
   const shouldReduceMotion = useReducedMotion() === true;
 
@@ -106,13 +130,192 @@ function AudioTrackRowWaveform({
       ? track.activityAnalysis.value
       : [];
 
+  const hasOffsetPreview = filterPreview?.streamIndex === streamIndex;
+  const syncOffset = hasOffsetPreview ? filterPreview.syncOffset : track.processing.syncOffset;
+
+  const audioBoundaries = audioTimelineBoundaries(
+    durationMicros,
+    stream.startTimeMicros,
+    stream.durationMicros,
+    syncOffset ?? undefined,
+  );
+
+  const originalAudioBoundaries = audioTimelineBoundaries(
+    durationMicros,
+    stream.startTimeMicros,
+    stream.durationMicros,
+  );
+
+  const syncOffsetRange = audioSyncOffsetRange(
+    durationMicros,
+    stream.startTimeMicros,
+    stream.durationMicros,
+  );
+
+  const unavailableRanges = getUnavailableAudioRanges(audioBoundaries, durationMicros);
+  const resetRanges =
+    syncOffset?.enabled && syncOffset.offsetMicros !== 0
+      ? getOffsetUnavailableAudioRanges(
+          originalAudioBoundaries,
+          audioBoundaries,
+          durationMicros,
+          syncOffset.offsetMicros,
+        )
+      : [];
+
   return (
     <div
       className="relative size-full h-12.5 min-w-0 overflow-hidden rounded-sm border border-border bg-muted/30 text-muted transition-opacity first-of-type:rounded-t-lg last-of-type:rounded-b-lg data-[enabled=false]:opacity-50"
       data-enabled={track.enabled}
-    >
-      <AudioTrackWaveform displayMode={displayMode} stream={stream} track={track} volume={volume} />
+      data-slot="audio-sync-interaction"
+      onClick={(event) => {
+        if (event.button !== 0) return;
+        if (
+          event.target instanceof Element &&
+          event.target.closest("button, input, select, textarea, a, [role='button']")
+        ) {
+          return;
+        }
+        if (!(event.target instanceof Element) || !event.target.closest("canvas")) return;
 
+        const position = waveformPosition(event.clientX, event.currentTarget, durationMicros);
+        if (!position) return;
+
+        const resetRange = resetRanges.find(
+          (range) => position.micros >= range.startMicros && position.micros < range.endMicros,
+        );
+
+        const isAvailable = isAudioPositionAvailable(position.micros, audioBoundaries);
+        if (!isAvailable && !resetRange) return;
+
+        if (resetRange) {
+          setHoveredPosition(null);
+          setHoveredResetRangeKey(null);
+          setSyncMarker({ action: "reset", leftPercent: position.leftPercent, offsetMicros: 0 });
+          return;
+        }
+
+        const currentOffsetMicros = effectiveAudioOffsetMicros(syncOffset ?? undefined);
+        const offsetMicros = Math.max(
+          syncOffsetRange.minOffsetMicros,
+          Math.min(
+            syncOffsetRange.maxOffsetMicros,
+            Math.round(getPositionMicros() + currentOffsetMicros - position.micros),
+          ),
+        );
+
+        setHoveredPosition(null);
+        setHoveredResetRangeKey(null);
+        setSyncMarker({ action: "sync", leftPercent: position.leftPercent, offsetMicros });
+      }}
+      onPointerLeave={() => {
+        setHoveredPosition(null);
+        setHoveredResetRangeKey(null);
+      }}
+      onPointerMove={(event) => {
+        if (event.pointerType === "touch") return;
+        if (
+          event.target instanceof Element &&
+          event.target.closest("button, input, select, textarea, a, [role='button']")
+        ) {
+          setHoveredPosition(null);
+          setHoveredResetRangeKey(null);
+          return;
+        }
+
+        const position = waveformPosition(event.clientX, event.currentTarget, durationMicros);
+        const resetRange = position
+          ? resetRanges.find(
+              (range) => position.micros >= range.startMicros && position.micros < range.endMicros,
+            )
+          : undefined;
+
+        const isAvailable = position && isAudioPositionAvailable(position.micros, audioBoundaries);
+        setHoveredPosition(isAvailable || resetRange ? (position?.leftPercent ?? null) : null);
+        setHoveredResetRangeKey(resetRange?.key ?? null);
+      }}
+    >
+      <div className="absolute inset-0">
+        <AudioTrackWaveform
+          displayMode={displayMode}
+          stream={stream}
+          syncOffset={hasOffsetPreview ? syncOffset : undefined}
+          timelineDurationMicros={durationMicros}
+          track={track}
+          volume={volume}
+        />
+      </div>
+
+      <div className="pointer-events-none absolute inset-0">
+        {hoveredPosition !== null && syncMarker === null ? (
+          <Tooltip open>
+            <TooltipTrigger asChild>
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-y-0 z-4 border-l border-dashed border-foreground/50 shadow-[0_0_3px_rgb(0_0_0/0.5)]"
+                data-slot="audio-sync-ghost-playhead"
+                style={{ left: `${hoveredPosition}%` }}
+              />
+            </TooltipTrigger>
+            <TooltipContent className="pointer-events-none" side="top" sideOffset={6}>
+              {hoveredResetRangeKey ? t("audio.syncOffset.reset") : t("audio.syncOffset.label")}
+            </TooltipContent>
+          </Tooltip>
+        ) : null}
+
+        <Popover
+          onOpenChange={(open) => {
+            if (!open) setSyncMarker(null);
+          }}
+          open={syncMarker !== null}
+        >
+          {syncMarker ? (
+            <PopoverAnchor asChild>
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-y-0 w-px bg-primary shadow-[0_0_4px_var(--primary)]"
+                data-slot="audio-sync-temporary-marker"
+                style={{ left: `${syncMarker.leftPercent}%` }}
+              />
+            </PopoverAnchor>
+          ) : null}
+          <PopoverContent
+            align="center"
+            className="w-auto min-w-44 p-2"
+            onClick={(event) => event.stopPropagation()}
+            onFocusOutside={() => setSyncMarker(null)}
+            onOpenAutoFocus={(event) => {
+              event.preventDefault();
+              confirmButtonRef.current?.focus();
+            }}
+            side="top"
+            sideOffset={6}
+          >
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => {
+                  if (!syncMarker) return;
+                  changeSyncOffset({
+                    enabled: true,
+                    offsetMicros: syncMarker.action === "reset" ? 0 : syncMarker.offsetMicros,
+                  });
+                  setSyncMarker(null);
+                }}
+                ref={confirmButtonRef}
+                size="sm"
+                type="button"
+              >
+                {syncMarker?.action === "reset"
+                  ? t("audio.syncOffset.reset")
+                  : t("audio.syncOffset.confirm")}
+              </Button>
+              <Button onClick={() => setSyncMarker(null)} size="sm" type="button" variant="ghost">
+                {t("common.actions.cancel")}
+              </Button>
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
       <div className="absolute top-1 right-1 z-4">
         <AudioTrackDisplaySelect streamIndex={streamIndex} />
       </div>
@@ -140,6 +343,33 @@ function AudioTrackRowWaveform({
           ))}
       </AnimatePresence>
 
+      {unavailableRanges.map(({ key, leftPercent, rightPercent }) => (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 z-2 transition-[left,right] duration-100 ease-out motion-reduce:transition-none"
+          data-slot="audio-unavailable-region"
+          key={key}
+          style={{
+            backgroundImage:
+              "repeating-linear-gradient(135deg, rgb(15 23 42 / 82%) 0 4px, rgb(30 41 59 / 82%) 4px 8px)",
+            left: `${leftPercent}%`,
+            right: `${rightPercent}%`,
+          }}
+        />
+      ))}
+
+      {resetRanges.map(({ key, leftPercent, rightPercent }) =>
+        hoveredResetRangeKey === key && syncMarker === null ? (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-y-0 z-3 bg-destructive/20"
+            data-slot="audio-unavailable-reset-hover"
+            key={key}
+            style={{ left: `${leftPercent}%`, right: `${rightPercent}%` }}
+          />
+        ) : null,
+      )}
+
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-y-0 right-(--timeline-selection-end-inset) left-(--timeline-selection-start) border-x border-primary/70 bg-primary/5"
@@ -158,6 +388,74 @@ const ACTIVITY_RANGE_OPACITY = 0.1;
 
 function percentOfDuration(micros: number, durationMicros: number) {
   return (Math.max(0, Math.min(durationMicros, micros)) / durationMicros) * 100;
+}
+
+function getUnavailableAudioRanges(
+  boundaries: ReturnType<typeof audioTimelineBoundaries>,
+  durationMicros: number,
+) {
+  if (durationMicros <= 0) return [];
+  if (!boundaries.hasVisibleAudio) {
+    return [{ key: "all", leftPercent: 0, rightPercent: 0 }];
+  }
+
+  const start = percentOfDuration(boundaries.visibleStartMicros, durationMicros);
+  const end = percentOfDuration(boundaries.visibleEndMicros, durationMicros);
+  return [
+    ...(start > 0 ? [{ key: "before", leftPercent: 0, rightPercent: 100 - start }] : []),
+    ...(end < 100 ? [{ key: "after", leftPercent: end, rightPercent: 0 }] : []),
+  ];
+}
+
+function getOffsetUnavailableAudioRanges(
+  original: ReturnType<typeof audioTimelineBoundaries>,
+  effective: ReturnType<typeof audioTimelineBoundaries>,
+  durationMicros: number,
+  offsetMicros: number,
+) {
+  if (durationMicros <= 0 || offsetMicros === 0) return [];
+
+  const startMicros =
+    offsetMicros > 0
+      ? Math.max(0, original.effectiveStartMicros)
+      : Math.max(0, original.effectiveStartMicros, effective.effectiveEndMicros);
+
+  const endMicros =
+    offsetMicros > 0
+      ? Math.min(durationMicros, original.effectiveEndMicros, effective.effectiveStartMicros)
+      : Math.min(durationMicros, original.effectiveEndMicros);
+
+  if (endMicros <= startMicros) return [];
+
+  return [
+    {
+      endMicros,
+      key: offsetMicros > 0 ? "before" : "after",
+      leftPercent: percentOfDuration(startMicros, durationMicros),
+      rightPercent: 100 - percentOfDuration(endMicros, durationMicros),
+      startMicros,
+    },
+  ];
+}
+
+function waveformPosition(clientX: number, element: HTMLElement, durationMicros: number) {
+  const bounds = element.getBoundingClientRect();
+  if (bounds.width <= 0 || durationMicros <= 0) return null;
+
+  const x = Math.max(0, Math.min(bounds.width, clientX - bounds.left));
+  const ratio = x / bounds.width;
+  return { leftPercent: ratio * 100, micros: Math.round(ratio * durationMicros) };
+}
+
+function isAudioPositionAvailable(
+  micros: number,
+  boundaries: ReturnType<typeof audioTimelineBoundaries>,
+) {
+  return (
+    boundaries.hasVisibleAudio &&
+    micros >= boundaries.effectiveStartMicros &&
+    micros < boundaries.effectiveEndMicros
+  );
 }
 
 function AudioTrackDisplaySelect({ streamIndex }: { streamIndex: number }) {

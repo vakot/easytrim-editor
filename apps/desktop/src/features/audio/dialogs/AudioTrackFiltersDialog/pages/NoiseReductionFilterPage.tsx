@@ -18,14 +18,12 @@ const content = defineAudioFilterPageContent<"noiseReduction">({
       label: (t) => t("audio.noiseReduction.reductionLabel"),
       unit: "dB",
       step: 0.5,
-      slider: { min: 1, max: 40 },
     },
     {
       parameter: "noiseFloorDb",
       label: (t) => t("audio.noiseReduction.noiseFloorLabel"),
       unit: "dB",
       step: 1,
-      slider: { min: -80, max: -20 },
     },
   ],
 });
