@@ -53,68 +53,66 @@ function WorkspaceHistoryEntry({
       : t("history.availableRedo");
 
   return (
-    <div className="px-1 py-0.5" key={operation?.id ?? "beginning"} role="listitem">
-      <button
-        aria-current={isCurrent ? "step" : undefined}
-        aria-label={t("history.entryAccessibility", {
-          action: label,
-          state: actionState,
-          sources: sources.length ? `, ${sources.join(", ")}` : "",
-        })}
-        className={`group flex w-full min-w-0 items-start gap-2 rounded-md border px-2.5 py-2 text-left transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 ${
-          isCurrent
-            ? "border-primary/50 bg-primary/10 text-foreground"
-            : isApplied
-              ? "border-transparent text-foreground hover:bg-muted/70"
-              : "border-transparent text-muted-foreground hover:bg-muted/50"
+    <button
+      aria-current={isCurrent ? "step" : undefined}
+      aria-label={t("history.entryAccessibility", {
+        action: label,
+        state: actionState,
+        sources: sources.length ? `, ${sources.join(", ")}` : "",
+      })}
+      className={`group flex w-full min-w-0 items-start gap-2 rounded-md border px-2.5 py-2 text-left transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 ${
+        isCurrent
+          ? "border-primary/50 bg-primary/10 text-foreground"
+          : isApplied
+            ? "border-transparent text-foreground hover:bg-muted/70"
+            : "border-transparent text-muted-foreground hover:bg-muted/50"
+      }`}
+      data-history-position={row.position}
+      data-history-state={state}
+      disabled={disabled}
+      key={operation?.id ?? "beginning"}
+      onClick={() => onSelect(row)}
+      role="listitem"
+      type="button"
+    >
+      <span
+        aria-hidden="true"
+        className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full ${
+          isCurrent ? "bg-primary text-primary-foreground" : "bg-muted"
         }`}
-        data-history-position={row.position}
-        data-history-state={state}
-        disabled={disabled}
-        onClick={() => onSelect(row)}
-        type="button"
       >
-        <span
-          aria-hidden="true"
-          className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full ${
-            isCurrent ? "bg-primary text-primary-foreground" : "bg-muted"
-          }`}
-        >
-          {isCurrent ? (
-            <Check className="size-3.5" />
-          ) : operation?.kind === "state" && operation.role === "navigation" ? (
-            <HistoryIcon className="size-3.5" />
-          ) : isApplied ? (
-            <RotateCcw className="size-3.5" />
-          ) : (
-            <RotateCw className="size-3.5" />
-          )}
+        {isCurrent ? (
+          <Check className="size-3.5" />
+        ) : operation?.kind === "state" && operation.role === "navigation" ? (
+          <HistoryIcon className="size-3.5" />
+        ) : isApplied ? (
+          <RotateCcw className="size-3.5" />
+        ) : (
+          <RotateCw className="size-3.5" />
+        )}
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="flex min-w-0 items-center gap-2">
+          <span className="min-w-0 flex-1 truncate text-sm font-medium">{label}</span>
+          {timestamp ? (
+            <time
+              className="shrink-0 text-xs text-muted-foreground tabular-nums"
+              dateTime={new Date(operation!.timestamp).toISOString()}
+            >
+              {timestamp}
+            </time>
+          ) : null}
         </span>
-        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="flex min-w-0 items-center gap-2">
-            <span className="min-w-0 flex-1 truncate text-sm font-medium">{label}</span>
-            {timestamp ? (
-              <time
-                className="shrink-0 text-xs text-muted-foreground tabular-nums"
-                dateTime={new Date(operation!.timestamp).toISOString()}
-              >
-                {timestamp}
-              </time>
-            ) : null}
+        {sources.length ? (
+          <span className="truncate text-xs text-muted-foreground" title={sources.join(", ")}>
+            {sources.join(", ")}
           </span>
-          {sources.length ? (
-            <span className="truncate text-xs text-muted-foreground" title={sources.join(", ")}>
-              {sources.join(", ")}
-            </span>
-          ) : null}
-          {isCurrent ? (
-            <span className="text-xs font-medium text-primary">{t("history.currentState")}</span>
-          ) : !isApplied ? (
-            <span className="text-xs">{t("history.availableRedo")}</span>
-          ) : null}
-        </span>
-      </button>
-    </div>
+        ) : null}
+        {!isCurrent && !isApplied ? (
+          <span className="text-xs">{t("history.availableRedo")}</span>
+        ) : null}
+      </span>
+    </button>
   );
 }
 
