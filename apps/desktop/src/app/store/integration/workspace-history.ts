@@ -359,6 +359,13 @@ function applyHistoryPosition(
       position === history.position
     )
       return false;
+    if (
+      activateInstanceId &&
+      activateInstanceId !== selectActiveInstanceId(state) &&
+      (state.editingInstances.entities[activateInstanceId]?.sourceAvailability !== "available" ||
+        state.editingInstances.entities[activateInstanceId]?.draftAvailable === false)
+    )
+      return false;
     const direction: "undo" | "redo" = position < history.position ? "undo" : "redo";
     const ordered = history.operations.slice(
       Math.min(position, history.position),

@@ -87,12 +87,12 @@ const restorePreviousWorkspaceRequested =
             snapshot: { ...savedInstance.snapshot, source },
           });
         } catch {
-          if (savedInstance.sourceAvailability === "missing") {
-            restored.push(toEditingInstance(savedInstance));
-          } else {
-            missingSourceCount += 1;
-            missingSourceIds.push(savedInstance.id);
-          }
+          missingSourceCount += 1;
+          missingSourceIds.push(savedInstance.id);
+          restored.push({
+            ...toEditingInstance(savedInstance),
+            sourceAvailability: "missing",
+          });
         }
       }
 
