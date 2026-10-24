@@ -381,10 +381,10 @@ describe("MenuBarTest", () => {
     const user = userEvent.setup();
     renderMenus();
 
-    const compactMenubar = screen.getAllByRole("menubar")[1];
+    const compactMenubar = screen.getAllByRole("menubar").at(1)!;
     await user.click(within(compactMenubar).getByRole("menuitem", { name: "Application menus" }));
 
-    expect(screen.queryByRole("menuitem", { name: "Edit", exact: true })).not.toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Edit" })).not.toBeInTheDocument();
   });
 
   it("opens the Command Palette from View", async () => {
