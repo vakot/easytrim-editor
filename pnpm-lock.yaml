@@ -137,9 +137,6 @@ importers:
       sonner:
         specifier: ^2.0.8
         version: 2.0.8(@types/react@19.2.11)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      tw-animate-css:
-        specifier: ^1.4.0
-        version: 1.4.0
     devDependencies:
       '@storybook/addon-a11y':
         specifier: 10.5.10
@@ -204,10 +201,19 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      shadcn:
+        specifier: ^4.16.0
+        version: 4.16.0(supports-color@7.2.0)(typescript@7.0.2)
       tailwind-merge:
         specifier: ^3.6.0
         version: 3.6.0
+      tw-animate-css:
+        specifier: ^1.4.0
+        version: 1.4.0
     devDependencies:
+      tailwindcss:
+        specifier: ^4.3.3
+        version: 4.3.3
       typescript:
         specifier: 7.0.2
         version: 7.0.2

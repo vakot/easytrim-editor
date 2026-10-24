@@ -315,6 +315,27 @@ export default defineConfig(
     },
   },
   {
+    files: ["packages/ui/src/**/*.{ts,tsx}"],
+    plugins: {
+      tailwindcss,
+    },
+    settings: {
+      tailwindcss: {
+        cssConfigPath: "src/styles/globals.css",
+        functions: ["cn", "cva", "clsx", "twMerge"],
+        parseKeyFunctions: ["clsx"],
+      },
+    },
+    rules: {
+      "tailwindcss/enforces-canonical-classname": "error",
+      "tailwindcss/enforces-negative-arbitrary-values": "error",
+      "tailwindcss/enforces-shorthand": "error",
+      "tailwindcss/important-modifier-suffix": "error",
+      "tailwindcss/no-contradicting-classname": "error",
+      "tailwindcss/no-unnecessary-arbitrary-value": "error",
+    },
+  },
+  {
     files: ["apps/desktop/src/components/ui/*.tsx", "packages/ui/src/components/*.tsx"],
     rules: {
       "react-refresh/only-export-components": "off",

@@ -1,6 +1,4 @@
-@import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
+@import "@easytrim-editor/ui/globals.css";
 @import "./theme.css";
 @import "./layout.css";
 @import "@fontsource/inter/400.css";
@@ -37,39 +35,10 @@
   height: 1.25rem;
 }
 
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-  button:not(:disabled),
-  [role="button"]:not(:disabled) {
-    cursor: pointer;
-  }
-  html {
-    @apply font-sans;
-  }
-}
-
 /* Color token updates during spectrum scrubbing should track the pointer immediately.
    Other motion remains available; only color interpolation is suppressed for components
    that opt into Tailwind's generic color/all transition utilities. */
 :root[data-primary-color-scrubbing] [class*="transition-colors"],
 :root[data-primary-color-scrubbing] [class*="transition-all"] {
   transition-property: transform, opacity, box-shadow;
-}
-
-/* Radix renders the custom scrollbar alongside a native viewport scrollbar.
-   Hide the native one consistently in browser and packaged WebView2 builds. */
-.scroll-area-viewport {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.scroll-area-viewport::-webkit-scrollbar {
-  display: none;
-  width: 0;
-  height: 0;
 }
