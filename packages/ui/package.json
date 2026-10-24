@@ -8,12 +8,15 @@
     "./card": "./src/components/card.tsx",
     "./class-names": "./src/lib/class-names.utils.ts",
     "./confetti": "./src/components/confetti.tsx",
+    "./date-time": "./src/lib/date-time.utils.ts",
     "./globals.css": "./src/styles/globals.css",
     "./ping": "./src/components/ping.tsx",
     "./ribbon": "./src/components/ribbon.tsx",
     "./scroll-area": "./src/components/scroll-area.tsx",
     "./text-reveal": "./src/components/text-reveal.tsx",
-    "./tooltip": "./src/components/tooltip.tsx"
+    "./timestamp": "./src/components/timestamp.tsx",
+    "./tooltip": "./src/components/tooltip.tsx",
+    "./use-relative-time": "./src/hooks/use-relative-time.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json --pretty false",

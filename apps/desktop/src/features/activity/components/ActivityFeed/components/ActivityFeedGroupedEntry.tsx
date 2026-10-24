@@ -3,11 +3,10 @@ import { motion, useReducedMotion } from "motion/react";
 import { useTranslation } from "react-i18next";
 
 import { cn } from "@easytrim-editor/ui/class-names";
+import { formatRelativeTime } from "@easytrim-editor/ui/date-time";
+import { useRelativeTimeNow } from "@easytrim-editor/ui/use-relative-time";
 
 import { Marker, MarkerContent, MarkerIcon, MarkerTitle } from "@/components/ui/marker";
-
-import { formatRelativeTime } from "@/lib/date-time.utils";
-import { useRelativeTimeNow } from "@/lib/hooks/use-relative-time";
 
 import type { ActivityEntry } from "../../../lib/activity-projection";
 import { toTimestampMicros } from "../lib/activity-feed.utils";

@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 
 import { cn } from "@easytrim-editor/ui/class-names";
+import { formatDateOnly } from "@easytrim-editor/ui/date-time";
 
 import { Badge } from "@/components/ui/badge";
 import { Item, ItemContent, ItemDescription, ItemMedia, ItemTitle } from "@/components/ui/item";
@@ -10,7 +11,6 @@ import { Item, ItemContent, ItemDescription, ItemMedia, ItemTitle } from "@/comp
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectAchievementRecords } from "@/app/store/slices/achievements-slice";
 import { selectUsageStatistics } from "@/app/store/slices/usage-statistics-slice";
-import { formatDateOnly } from "@/lib/date-time.utils";
 
 import { useAchievementSecretGradientId } from "../../../hooks/useAchievementSecretGradientId";
 import {

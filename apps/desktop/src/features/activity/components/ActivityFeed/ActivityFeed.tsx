@@ -3,11 +3,11 @@ import { useTranslation } from "react-i18next";
 
 import { cn } from "@easytrim-editor/ui/class-names";
 import { ScrollArea } from "@easytrim-editor/ui/scroll-area";
+import { useRelativeTimeNow } from "@easytrim-editor/ui/use-relative-time";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectActivityFeedView } from "@/app/store/slices/preferences-slice";
 import { getCurrentVersion } from "@/lib/app-version.utils";
-import { useRelativeTimeNow } from "@/lib/hooks/use-relative-time";
 import { openFileLocation } from "@/lib/tauri/media";
 
 import { useActivityFeed as useActivityFeedSession } from "../../hooks/useActivityFeed";
