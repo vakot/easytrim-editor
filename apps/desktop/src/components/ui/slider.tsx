@@ -4,8 +4,7 @@ import { Slider as SliderPrimitive } from "radix-ui";
 import * as React from "react";
 
 import { cn } from "@easytrim-editor/ui/class-names";
-
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@easytrim-editor/ui/tooltip";
 
 import { useDragAwareDoubleClick } from "@/components/useDragAwareDoubleClick";
 import { useSliderSnapping } from "@/components/useSliderSnapping";

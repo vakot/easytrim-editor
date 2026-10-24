@@ -1,7 +1,8 @@
 import { Monitor, Moon, Sun, ZoomIn } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@easytrim-editor/ui/button";
+
 import { Kbd } from "@/components/ui/kbd";
 import {
   MenubarCheckboxItem,

@@ -3,7 +3,7 @@ import "@/i18n/config";
 import type { Meta, StoryObj } from "@storybook/react";
 import { Provider } from "react-redux";
 
-import { Card } from "@/components/ui/card";
+import { Card } from "@easytrim-editor/ui/card";
 
 import type { ExportRoute } from "@/domain/editing-instance";
 

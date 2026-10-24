@@ -7,7 +7,7 @@ const openFileLocation = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/tauri/media", () => ({ openFileLocation }));
 
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { TooltipProvider } from "@easytrim-editor/ui/tooltip";
 
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
 import {

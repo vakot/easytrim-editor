@@ -1,8 +1,7 @@
 import { useTranslation } from "react-i18next";
 
 import { cn } from "@easytrim-editor/ui/class-names";
-
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@easytrim-editor/ui/tooltip";
 
 import { RelativeTimestamp } from "@/components/relative-timestamp";
 

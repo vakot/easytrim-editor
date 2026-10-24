@@ -4,8 +4,8 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { useState } from "react";
 import { Provider } from "react-redux";
 
-import { Button } from "@/components/ui/button";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { Button } from "@easytrim-editor/ui/button";
+import { TooltipProvider } from "@easytrim-editor/ui/tooltip";
 
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
 import {

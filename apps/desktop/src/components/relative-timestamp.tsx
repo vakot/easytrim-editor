@@ -4,8 +4,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 import { cn } from "@easytrim-editor/ui/class-names";
-
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@easytrim-editor/ui/tooltip";
 
 import { formatDateTime, formatRelativeTime } from "@/lib/date-time.utils";
 import { useRelativeTimeNow } from "@/lib/hooks/use-relative-time";

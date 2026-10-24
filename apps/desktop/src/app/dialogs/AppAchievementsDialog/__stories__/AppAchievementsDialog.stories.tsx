@@ -4,7 +4,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useEffect, useMemo } from "react";
 import { Provider } from "react-redux";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@easytrim-editor/ui/button";
 
 import { AppAchievementsDialog } from "@/app/dialogs/AppAchievementsDialog";
 import { useAchievementsDialog } from "@/app/hooks/useAppDialog";

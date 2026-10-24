@@ -2,9 +2,9 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { CheckIcon, ChevronsUpDownIcon } from "lucide-react";
 import * as React from "react";
 
+import { Button } from "@easytrim-editor/ui/button";
 import { cn } from "@easytrim-editor/ui/class-names";
 
-import { Button } from "@/components/ui/button";
 import {
   Combobox,
   ComboboxContent,

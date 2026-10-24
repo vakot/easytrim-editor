@@ -9,8 +9,9 @@ import userEvent from "@testing-library/user-event";
 import { type ReactElement, useRef, useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
+import { TooltipProvider } from "@easytrim-editor/ui/tooltip";
+
 import { ResizablePanelContextProvider } from "@/components/ui/resizable";
-import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { useWorkspaceViews } from "@/app/contexts/workspace-views-context";

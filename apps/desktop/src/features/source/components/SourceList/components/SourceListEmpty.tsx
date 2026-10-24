@@ -3,9 +3,9 @@ import type { ReactNode } from "react";
 import { useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Button } from "@easytrim-editor/ui/button";
 import { cn } from "@easytrim-editor/ui/class-names";
 
-import { Button } from "@/components/ui/button";
 import {
   Empty,
   EmptyContent,

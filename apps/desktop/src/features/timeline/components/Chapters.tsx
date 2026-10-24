@@ -2,12 +2,12 @@ import { BookmarkPlus, Pencil, Trash2 } from "lucide-react";
 import type { ComponentProps } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Button } from "@easytrim-editor/ui/button";
 import { cn } from "@easytrim-editor/ui/class-names";
+import { ScrollArea } from "@easytrim-editor/ui/scroll-area";
 
-import { Button } from "@/components/ui/button";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Item, ItemActions, ItemContent, ItemDescription, ItemTitle } from "@/components/ui/item";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { chapterDeleted, selectChapters } from "@/app/store/slices/chapters-slice";

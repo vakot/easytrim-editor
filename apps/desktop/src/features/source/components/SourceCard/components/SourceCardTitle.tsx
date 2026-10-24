@@ -1,6 +1,5 @@
+import { CardTitle } from "@easytrim-editor/ui/card";
 import { cn } from "@easytrim-editor/ui/class-names";
-
-import { CardTitle } from "@/components/ui/card";
 
 import { useSourceCardData } from "../hooks/useSourceCardData";
 import type { SourceCardContent } from "../types";

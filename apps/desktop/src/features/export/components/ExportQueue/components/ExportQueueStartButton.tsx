@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "@easytrim-editor/ui/button";
 
 import { useApplicationCommand, useApplicationCommands } from "@/app/hooks/useApplicationCommands";
 

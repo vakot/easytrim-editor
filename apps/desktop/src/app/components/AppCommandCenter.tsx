@@ -3,9 +3,9 @@ import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Button } from "@easytrim-editor/ui/button";
 import { cn } from "@easytrim-editor/ui/class-names";
 
-import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { PopoverAnchor } from "@/components/ui/popover";

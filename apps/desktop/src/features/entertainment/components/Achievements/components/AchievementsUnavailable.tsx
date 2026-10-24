@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@easytrim-editor/ui/button";
 
 import { useAppDispatch } from "@/app/store/redux-hooks";
 import { loadAchievementRecords } from "@/app/store/thunks/achievement-thunks";

@@ -3,7 +3,7 @@
 import { Tooltip as TooltipPrimitive } from "radix-ui";
 import * as React from "react";
 
-import { cn } from "@easytrim-editor/ui/class-names";
+import { cn } from "../lib/class-names.utils";
 
 const DEFAULT_TOOLTIP_DELAY_MS = 500;
 

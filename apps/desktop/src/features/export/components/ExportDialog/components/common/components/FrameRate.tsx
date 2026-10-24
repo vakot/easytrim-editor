@@ -2,6 +2,8 @@ import { ChevronsUpDown, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Button } from "@easytrim-editor/ui/button";
+
 import {
   Autocomplete,
   AutocompleteAnchor,
@@ -13,7 +15,6 @@ import {
   AutocompleteList,
   AutocompleteTrigger,
 } from "@/components/ui/autocomplete";
-import { Button } from "@/components/ui/button";
 import { InputGroupButton } from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
 

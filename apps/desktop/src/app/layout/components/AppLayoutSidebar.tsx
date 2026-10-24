@@ -5,10 +5,10 @@ import { Fragment, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 
+import { Button } from "@easytrim-editor/ui/button";
+import { Card } from "@easytrim-editor/ui/card";
 import { cn } from "@easytrim-editor/ui/class-names";
 
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from "@/components/ui/context-menu";
 import {
   ResizableHandle,

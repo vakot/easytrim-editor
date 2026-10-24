@@ -1,13 +1,13 @@
 import { BetweenVerticalStart, Clapperboard, Repeat, Save } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { Button } from "@easytrim-editor/ui/button";
+import { Card, CardContent } from "@easytrim-editor/ui/card";
 import { cn } from "@easytrim-editor/ui/class-names";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@easytrim-editor/ui/tooltip";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Spinner } from "@/components/ui/spinner";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { ApplicationCommandIcon } from "@/app/components/ApplicationCommandMenuItem";
 import { useApplicationCommand, useApplicationCommands } from "@/app/hooks/useApplicationCommands";

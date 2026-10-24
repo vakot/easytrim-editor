@@ -1,9 +1,8 @@
 import { cva } from "class-variance-authority";
 import { memo, type ReactNode } from "react";
 
+import { Card } from "@easytrim-editor/ui/card";
 import { cn } from "@easytrim-editor/ui/class-names";
-
-import { Card } from "@/components/ui/card";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-slice";

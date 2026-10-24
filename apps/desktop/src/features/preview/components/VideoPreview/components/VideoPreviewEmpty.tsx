@@ -3,9 +3,9 @@ import { motion, useReducedMotion } from "motion/react";
 import { Fragment, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Button } from "@easytrim-editor/ui/button";
 import { cn } from "@easytrim-editor/ui/class-names";
 
-import { Button } from "@/components/ui/button";
 import { Kbd, KbdGroup, KbdSeparator } from "@/components/ui/kbd";
 
 import {

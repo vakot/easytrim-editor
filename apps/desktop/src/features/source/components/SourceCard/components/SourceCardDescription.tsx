@@ -1,6 +1,5 @@
+import { CardDescription } from "@easytrim-editor/ui/card";
 import { cn } from "@easytrim-editor/ui/class-names";
-
-import { CardDescription } from "@/components/ui/card";
 
 import { formatSourcePath } from "../../../lib/media-formatters.utils";
 import { useSourceCardData } from "../hooks/useSourceCardData";

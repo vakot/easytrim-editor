@@ -1,9 +1,9 @@
 import { ChevronsUpDown, ExternalLink } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { Button } from "@easytrim-editor/ui/button";
 import { cn } from "@easytrim-editor/ui/class-names";
 
-import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 
 import {

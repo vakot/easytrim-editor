@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { Button } from "../button";
+import { Button } from "@easytrim-editor/ui/button";
+
 import { ButtonGroup, ButtonGroupSeparator, ButtonGroupText } from "../button-group";
 
 const meta = {

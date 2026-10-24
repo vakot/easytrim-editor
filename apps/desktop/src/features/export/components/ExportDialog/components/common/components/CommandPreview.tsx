@@ -2,6 +2,8 @@ import { Check, Copy } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Tooltip, TooltipContent, TooltipTrigger } from "@easytrim-editor/ui/tooltip";
+
 import {
   InputGroup,
   InputGroupAddon,
@@ -9,7 +11,6 @@ import {
   InputGroupTextarea,
 } from "@/components/ui/input-group";
 import { Label } from "@/components/ui/label";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 function CommandPreview({ command, error }: { command: string; error?: string | null }) {
   const { t } = useTranslation();

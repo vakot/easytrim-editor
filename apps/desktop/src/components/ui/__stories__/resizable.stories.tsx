@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import type { ComponentProps } from "react";
 
-import { Card } from "@/components/ui/card";
+import { Card } from "@easytrim-editor/ui/card";
 
 import {
   ResizableHandle,

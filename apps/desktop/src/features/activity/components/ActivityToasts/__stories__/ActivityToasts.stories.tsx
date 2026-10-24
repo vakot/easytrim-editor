@@ -2,7 +2,8 @@ import type { Meta, StoryObj } from "@storybook/react";
 import type { ReactNode } from "react";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@easytrim-editor/ui/button";
+
 import { Toaster } from "@/components/ui/sonner";
 
 type ToastVariant = "default" | "destructive" | "success";

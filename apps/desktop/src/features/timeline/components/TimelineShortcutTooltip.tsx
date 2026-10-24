@@ -1,4 +1,4 @@
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@easytrim-editor/ui/tooltip";
 
 import type { ApplicationShortcut } from "@/app/commands/core/application-command.types";
 import { ShortcutTooltipContent } from "@/app/components/ShortcutTooltipContent";

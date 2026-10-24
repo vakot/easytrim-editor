@@ -12,7 +12,10 @@ const config = {
     name: "@storybook/react-vite",
     options: {},
   },
-  stories: ["../src/**/__stories__/**/*.stories.@(ts|tsx)"],
+  stories: [
+    "../src/**/__stories__/**/*.stories.@(ts|tsx)",
+    "../../../packages/ui/src/**/__stories__/**/*.stories.@(ts|tsx)",
+  ],
   viteFinal: async (viteConfig) => ({
     ...viteConfig,
     plugins: [...(viteConfig.plugins ?? []), tailwindcss()],

@@ -4,9 +4,10 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useMemo } from "react";
 import { Provider } from "react-redux";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@easytrim-editor/ui/button";
+import { TooltipProvider } from "@easytrim-editor/ui/tooltip";
+
 import { ResizablePanelContextProvider } from "@/components/ui/resizable";
-import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { AppSettingsDialog } from "@/app/dialogs/AppSettingsDialog";
