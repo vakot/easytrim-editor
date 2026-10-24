@@ -9,7 +9,10 @@ type TextRevealProps = {
   className?: string;
   /** Styles the glyphs shown in place of characters that are not resolved yet. */
   glyphClassName?: string;
-  /** The symbols unresolved characters cycle through. */
+  /**
+   * The symbols unresolved characters cycle through. Pass a stable array; a new array restarts
+   * the reveal.
+   */
   glyphs: readonly string[];
   /** Plays no animation and shows the text at once; defaults to the reduced-motion preference. */
   reducedMotion?: boolean;
