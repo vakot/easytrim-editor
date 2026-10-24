@@ -109,7 +109,7 @@ UI dimensions must use rem units or scalable Tailwind theme utilities because th
 scales the root font size. Avoid fixed `px` values for spacing, sizing, typography, borders, shadows,
 and effects. Keep physical pixels only for intentional hairlines or operations whose meaning is
 intrinsically pixel-based, and document the exception next to the value. Run `pnpm check:ui-units` to
-catch numeric pixel literals in desktop frontend source.
+catch numeric pixel literals in desktop and shared UI source.
 
 The repository's `pnpm format`, `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, and `pnpm knip`
 scripts are the source of truth for formatting, linting, types, and production dead-code analysis.
