@@ -16,6 +16,7 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@easytrim-editor/ui/button";
 import { cn } from "@easytrim-editor/ui/class-names";
+import { Ping } from "@easytrim-editor/ui/ping";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@easytrim-editor/ui/tooltip";
 
 import {
@@ -37,7 +38,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { LibraryNavigation, LibraryNavigationItem } from "@/components/library";
-import { Ping } from "@/components/ping";
 import {
   areAudioFiltersValid,
   AUDIO_FILTER_TYPES,

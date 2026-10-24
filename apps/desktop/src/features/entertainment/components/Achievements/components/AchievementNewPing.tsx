@@ -1,6 +1,5 @@
 import { cn } from "@easytrim-editor/ui/class-names";
-
-import { Ping } from "@/components/ping";
+import { Ping } from "@easytrim-editor/ui/ping";
 
 /** Marks something unlocked since the collection was last viewed. Purely visual. */
 function AchievementNewPing({ className }: { className?: string }) {

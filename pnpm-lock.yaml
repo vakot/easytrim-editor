@@ -131,9 +131,6 @@ importers:
       shadcn:
         specifier: ^4.16.0
         version: 4.16.0(supports-color@7.2.0)(typescript@7.0.2)
-      simple-icons:
-        specifier: ^16.28.0
-        version: 16.28.0
       sonner:
         specifier: ^2.0.8
         version: 2.0.8(@types/react@19.2.11)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -204,12 +201,18 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      motion:
+        specifier: ^13.4.2
+        version: 13.4.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       radix-ui:
         specifier: ^1.6.7
         version: 1.6.7(@types/react-dom@19.2.3(@types/react@19.2.11))(@types/react@19.2.11)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       shadcn:
         specifier: ^4.16.0
         version: 4.16.0(supports-color@7.2.0)(typescript@7.0.2)
+      simple-icons:
+        specifier: ^16.28.0
+        version: 16.28.0
       tailwind-merge:
         specifier: ^3.6.0
         version: 3.6.0
@@ -238,6 +241,9 @@ importers:
       jsdom:
         specifier: 30.0.1
         version: 30.0.1
+      lucide-react:
+        specifier: ^1.28.0
+        version: 1.28.0(react@19.2.8)
       react:
         specifier: 19.2.8
         version: 19.2.8

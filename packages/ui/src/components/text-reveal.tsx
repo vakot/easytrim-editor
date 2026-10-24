@@ -3,7 +3,7 @@
 import { animate, useReducedMotion } from "motion/react";
 import { useLayoutEffect, useMemo, useRef } from "react";
 
-import { cn } from "@easytrim-editor/ui/class-names";
+import { cn } from "../lib/class-names.utils";
 
 type TextRevealProps = {
   className?: string;

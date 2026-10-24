@@ -1,8 +1,7 @@
-import type { Meta, StoryObj } from "@storybook/react-vite";
+import type { Meta, StoryObj } from "@storybook/react";
 import { type ComponentProps, useEffect, useRef, useState } from "react";
 
-import { Button } from "@easytrim-editor/ui/button";
-
+import { Button } from "../button";
 import { Confetti } from "../confetti";
 
 type ConfettiProps = ComponentProps<typeof Confetti>;

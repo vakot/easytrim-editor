@@ -1,4 +1,4 @@
-import { cn } from "@easytrim-editor/ui/class-names";
+import { cn } from "../lib/class-names.utils";
 
 function Ping({ className, ...props }: Omit<React.ComponentProps<"span">, "children">) {
   return (

@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 
-import { KofiIcon } from "@/components/brand-icons";
+import { KofiIcon } from "@easytrim-editor/ui/brand-icons";
+
 import { getCurrentVersion } from "@/lib/app-version.utils";
 
 import { CommandButton, SettingRow, SettingsSection } from "../components/SettingRow";
