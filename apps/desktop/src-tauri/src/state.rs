@@ -434,14 +434,22 @@ impl AppState {
             .ok_or_else(AppError::source_replaced)
     }
 
+    /// Cancels the active source's work and stops the processed audio sessions that keep it open,
+    /// so the file can be moved or deleted on platforms that lock open files.
     pub fn cancel_source_operations(&self, source_path: &Path) -> Result<(), AppError> {
         let session = self.lock_session()?;
-        if let Some(source) = session
+        let load_token = session
             .active_source
             .as_ref()
             .filter(|source| source.path == source_path)
-        {
-            source.cancellation.store(true, Ordering::Release);
+            .map(|source| {
+                source.cancellation.store(true, Ordering::Release);
+                source.load_token
+            });
+        drop(session);
+
+        if let Some(load_token) = load_token {
+            self.audio_engine.release_source(load_token);
         }
         Ok(())
     }
@@ -913,6 +921,83 @@ mod tests {
             .resolve_source_by_path("active.mp4")
             .expect("active source resolves");
         assert!(active.cancellation.load(Ordering::Acquire));
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn cancelling_source_operations_stops_processed_audio_that_keeps_the_source_open() {
+        use std::{thread, time::Duration};
+
+        use super::ActiveSource;
+        use crate::media::audio_filters::{
+            compiler::compile_chain,
+            engine::{RenderPurpose, RenderRequest},
+            model::fixtures::gain,
+            pcm_cache::FrameRange,
+            test_fixtures::{PROGRAM_MATERIAL, fixture_source, generate_fixture},
+        };
+
+        let fixture = generate_fixture("state-cancel", PROGRAM_MATERIAL, "wav", "pcm_s16le");
+        let state = AppState::default();
+        let generation = state.begin_source_replacement().expect("source starts");
+        let load_token = state
+            .complete_source_replacement(
+                generation,
+                ValidatedSource {
+                    path: fixture.path().to_owned(),
+                },
+            )
+            .expect("source completes");
+        let active = state
+            .resolve_source_by_load_token(load_token)
+            .expect("active source resolves");
+        let source = ActiveSource {
+            load_token,
+            cancellation: active.cancellation,
+            ..fixture_source(fixture.path(), 8_000_000)
+        };
+        let chain = compile_chain(&[gain("g", 3.0)], &[]).expect("chain compiles");
+        state
+            .audio_engine()
+            .render(
+                &RenderRequest {
+                    source: &source,
+                    stream_index: 0,
+                    chain: &chain,
+                    range: FrameRange {
+                        start: 0,
+                        end: 8 * 48_000,
+                    },
+                    start: 0,
+                    frames: 48_000,
+                    channels: 2,
+                    purpose: RenderPurpose::Playback,
+                    replacement: false,
+                },
+                &|| false,
+            )
+            .expect("processed audio renders");
+
+        let moved = fixture.path().with_extension("moved.wav");
+        assert!(
+            std::fs::rename(fixture.path(), &moved).is_err(),
+            "the idle session keeps the source open"
+        );
+
+        state
+            .cancel_source_operations(fixture.path())
+            .expect("source cancellation succeeds");
+
+        // Terminating the session does not wait for the process to exit and close the file.
+        let released = (0..50).any(|_| {
+            let renamed = std::fs::rename(fixture.path(), &moved).is_ok();
+            if !renamed {
+                thread::sleep(Duration::from_millis(100));
+            }
+            renamed
+        });
+        assert!(released, "cancellation releases the source file");
+        std::fs::rename(&moved, fixture.path()).expect("fixture is restored for cleanup");
     }
 
     #[test]

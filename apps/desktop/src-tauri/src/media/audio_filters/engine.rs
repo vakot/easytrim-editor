@@ -583,6 +583,13 @@ impl AudioProcessingEngine {
             slot.last_used = Instant::now();
             return Ok((Arc::clone(&slot.session), Arc::clone(&slot.cursor)));
         }
+        // Checked under the engine lock: a source cancelled and released while this request was
+        // in flight must not start a process that reopens it.
+        if request.source.cancellation.load(Ordering::Acquire) {
+            return Err(AppError::cancelled(
+                AppErrorMessageId::MediaAudioProcessedAudioRenderWasCancelled,
+            ));
+        }
 
         let origin = key.range.start;
         let (seek_frame, committed_from) =

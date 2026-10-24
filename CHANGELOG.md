@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed source files failing to move to Trash on Windows after audio playback, including automatic deletion after rendering.
+
 ## [1.15.0]
 
 ### Added
