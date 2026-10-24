@@ -1,12 +1,13 @@
 import { CircleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 
 import { localizeAppError } from "@/i18n/app-errors";
-import { cn } from "@/lib/class-names.utils";
 
 import { useExportQueueItem } from "../contexts/ExportQueueItemContext";
 

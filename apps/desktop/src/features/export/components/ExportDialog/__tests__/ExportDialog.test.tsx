@@ -24,7 +24,7 @@ vi.mock("@/lib/tauri/media", () => ({
   reserveExportSource: vi.fn(),
 }));
 
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { TooltipProvider } from "@easytrim-editor/ui/tooltip";
 
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";

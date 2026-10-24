@@ -27,8 +27,9 @@ vi.mock("../../../hooks/useActivityFeed", () => ({
   useActivityFeed: () => activityFeedState,
 }));
 
+import { TooltipProvider } from "@easytrim-editor/ui/tooltip";
+
 import { ResizablePanelContextProvider } from "@/components/ui/resizable";
-import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { activityFeedViewChanged } from "@/app/store/slices/preferences-slice";
 import { createAppStore } from "@/app/store/store";

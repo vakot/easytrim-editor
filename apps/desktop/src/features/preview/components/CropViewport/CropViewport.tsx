@@ -4,7 +4,8 @@ import { type PointerEvent, useCallback, useEffect, useLayoutEffect, useMemo, us
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@easytrim-editor/ui/button";
+
 import { ButtonGroup } from "@/components/ui/button-group";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";

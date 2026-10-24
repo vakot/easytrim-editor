@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { TooltipProvider } from "@easytrim-editor/ui/tooltip";
 
 import { AppLayoutToolbar } from "../AppLayoutToolbar";
 

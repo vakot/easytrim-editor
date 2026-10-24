@@ -1,12 +1,14 @@
 import { Suspense } from "react";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+import { ScrollArea } from "@easytrim-editor/ui/scroll-area";
+
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
   usePanelCommand,
 } from "@/components/ui/resizable";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
 import { useApplicationCommand } from "@/app/hooks/useApplicationCommands";
@@ -19,7 +21,6 @@ import { ExportActions } from "@/features/export";
 import { Preview } from "@/features/preview";
 import { SourceBreadcrumb } from "@/features/source";
 import { TimelineAxisScope, TimelinePanel } from "@/features/timeline";
-import { cn } from "@/lib/class-names.utils";
 
 import { useSidebarVisibility } from "../hooks/useSidebarVisibility";
 

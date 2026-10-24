@@ -1,9 +1,9 @@
 import * as React from "react";
 
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@easytrim-editor/ui/class-names";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@easytrim-editor/ui/tooltip";
 
 import { useDragAwareDoubleClick } from "@/components/useDragAwareDoubleClick";
-import { cn } from "@/lib/class-names.utils";
 
 import { TimelineContext, useTimeline } from "./contexts/timeline-context";
 import { microsAtClientX, percentOf, snapToTargets } from "./lib/timeline-scale";

@@ -5,7 +5,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useLayoutEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@easytrim-editor/ui/card";
 
 import { useUiScaleFeedback } from "@/app/contexts/ui-scale-feedback-context";
 import { useWorkspaceViews } from "@/app/contexts/workspace-views-context";

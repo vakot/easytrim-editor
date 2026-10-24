@@ -4,7 +4,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { type ComponentProps, useLayoutEffect, useMemo, useState } from "react";
 import { Provider } from "react-redux";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@easytrim-editor/ui/button";
 
 import { achievementRecordsUpdated } from "@/app/store/slices/achievements-slice";
 import { createAppStore } from "@/app/store/store";

@@ -2,11 +2,12 @@ import type { TFunction } from "i18next";
 import { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import { applyHistoryPosition } from "@/app/store/integration/workspace-history";
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import type { RootState } from "@/app/store/store";
 import type { HistoryTarget } from "@/domain/workspace-history";
-import { cn } from "@/lib/class-names.utils";
 
 import { WorkspaceHistoryEmpty } from "./components/WorkspaceHistoryEmpty";
 import { WorkspaceHistoryList } from "./components/WorkspaceHistoryList";

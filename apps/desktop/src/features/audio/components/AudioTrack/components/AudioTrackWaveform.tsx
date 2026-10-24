@@ -1,12 +1,13 @@
 import { useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { type AudioTrackState, waveformDisplayFailed } from "@/app/store/slices/audio-slice";
 import { selectSourceLoadToken } from "@/app/store/slices/source-slice";
 import { usePrimaryColor } from "@/app/theme/useTheme";
 import { type AudioSyncOffset, effectiveAudioOffsetMicros } from "@/domain/audio-processing";
-import { cn } from "@/lib/class-names.utils";
 import type { AudioStream } from "@/lib/tauri/media.types";
 
 import type { WaveformDisplayMode } from "../../../lib/waveform-display-mode";

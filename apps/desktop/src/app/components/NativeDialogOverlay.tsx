@@ -1,7 +1,8 @@
 import { useTranslation } from "react-i18next";
 
+import { Card, CardContent } from "@easytrim-editor/ui/card";
+
 import { Backdrop } from "@/components/ui/backdrop";
-import { Card, CardContent } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 
 import { useAppSelector } from "@/app/store/redux-hooks";

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { Card } from "@/components/ui/card";
+import { Card } from "@easytrim-editor/ui/card";
 
 import { CursorTooltip } from "../cursor-tooltip";
 

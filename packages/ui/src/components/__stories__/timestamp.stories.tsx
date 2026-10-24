@@ -1,16 +1,15 @@
-import "@/i18n/config";
-
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { TooltipProvider } from "@/components/ui/tooltip";
-
-import { RelativeTimestamp } from "../relative-timestamp";
+import { Timestamp } from "../timestamp";
+import { TooltipProvider } from "../tooltip";
 
 const meta = {
   args: {
     className: "text-sm text-muted-foreground",
+    locale: "en",
+    unknownLabel: "Unknown",
   },
-  component: RelativeTimestamp,
+  component: Timestamp,
   decorators: [
     (Story) => (
       <TooltipProvider>
@@ -22,8 +21,8 @@ const meta = {
   ],
   parameters: { layout: "centered" },
   tags: ["autodocs"],
-  title: "Design System/Relative Timestamp",
-} satisfies Meta<typeof RelativeTimestamp>;
+  title: "Design System/Timestamp",
+} satisfies Meta<typeof Timestamp>;
 
 export default meta;
 

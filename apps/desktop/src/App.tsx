@@ -4,11 +4,12 @@ import { useTranslation } from "react-i18next";
 import { Provider as ReduxProvider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 
+import { Button } from "@easytrim-editor/ui/button";
+import { TooltipProvider } from "@easytrim-editor/ui/tooltip";
+
 import { Alert, AlertAction, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
 import { ResizablePanelContextProvider } from "@/components/ui/resizable";
 import { Toaster } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { NativeDialogOverlay } from "@/app/components/NativeDialogOverlay";
 import { WorkspaceRecoveryNotice } from "@/app/components/WorkspaceRecoveryNotice";

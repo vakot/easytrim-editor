@@ -10,8 +10,9 @@ import type { ReactElement, ReactNode } from "react";
 import { Provider } from "react-redux";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
+import { TooltipProvider } from "@easytrim-editor/ui/tooltip";
+
 import { ResizablePanelContextProvider } from "@/components/ui/resizable";
-import { TooltipProvider } from "@/components/ui/tooltip";
 
 import {
   COMMAND_PALETTE_SHORTCUT,

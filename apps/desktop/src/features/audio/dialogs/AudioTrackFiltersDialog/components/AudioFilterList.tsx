@@ -14,6 +14,11 @@ import {
 import type { ComponentProps } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Button } from "@easytrim-editor/ui/button";
+import { cn } from "@easytrim-editor/ui/class-names";
+import { Ping } from "@easytrim-editor/ui/ping";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@easytrim-editor/ui/tooltip";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,17 +30,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { LibraryNavigation, LibraryNavigationItem } from "@/components/library";
-import { Ping } from "@/components/ping";
 import {
   areAudioFiltersValid,
   AUDIO_FILTER_TYPES,
@@ -44,7 +46,6 @@ import {
   isAudioSyncOffsetWithinRange,
   MAX_AUDIO_FILTERS,
 } from "@/domain/audio-processing";
-import { cn } from "@/lib/class-names.utils";
 
 import { useAudioFiltersDraft } from "../contexts/audio-filters-draft-context";
 import { audioFilterLabel } from "../lib/audio-filter-label";

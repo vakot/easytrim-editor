@@ -1,4 +1,4 @@
-import { cn } from "@/lib/class-names.utils";
+import { cn } from "../lib/class-names.utils";
 
 function Ping({ className, ...props }: Omit<React.ComponentProps<"span">, "children">) {
   return (

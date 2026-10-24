@@ -8,6 +8,8 @@ Agents must enforce these boundaries:
 
 - Keep `apps/desktop` as the coupled React/Tauri application; add workspace packages only for a
   stable contract with at least two consumers.
+- Keep `packages/ui` browser-safe and free of desktop, Tauri, Redux, and i18n dependencies; consume
+  it only through its package `exports` and move (never copy) primitives into it.
 - Keep application composition and cross-feature orchestration in `app/`, capability code in
   `features/`, shared primitives in `components/ui/`, pure shared product logic in `domain/`, and
   technical adapters in `lib/`.

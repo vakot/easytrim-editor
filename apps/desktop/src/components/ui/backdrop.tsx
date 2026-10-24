@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@/lib/class-names.utils";
+import { cn } from "@easytrim-editor/ui/class-names";
 
 function Backdrop({ className, ...props }: React.ComponentProps<"div">) {
   return (

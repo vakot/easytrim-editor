@@ -1,8 +1,9 @@
 import { FileVideo2, Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { Card, CardContent } from "@easytrim-editor/ui/card";
+
 import { Backdrop } from "@/components/ui/backdrop";
-import { Card, CardContent } from "@/components/ui/card";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectIsSourceDragActive } from "@/app/store/slices/import-workflow-slice";

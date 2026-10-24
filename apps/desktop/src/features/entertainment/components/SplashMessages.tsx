@@ -1,9 +1,10 @@
 import { type RefObject, useEffect, useRef, useState } from "react";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectAchievementsInitialized } from "@/app/store/slices/achievements-slice";
 import { discoverSplashMessage } from "@/app/store/thunks/achievement-thunks";
-import { cn } from "@/lib/class-names.utils";
 
 import { galacticGlyphs } from "../consts/galactic-glyphs.consts";
 import { chooseSplashMessage } from "../lib/splash-messages.utils";

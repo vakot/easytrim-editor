@@ -1,7 +1,8 @@
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import { MarkerTitle } from "@/components/ui/marker";
 
 import { RelativeTimestamp } from "@/components/relative-timestamp";
-import { cn } from "@/lib/class-names.utils";
 
 import type { ActivityEntry } from "../../../lib/activity-projection";
 import { toTimestampMicros } from "../lib/activity-feed.utils";

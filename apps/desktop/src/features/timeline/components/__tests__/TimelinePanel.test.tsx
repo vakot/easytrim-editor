@@ -4,7 +4,7 @@ import { type ReactNode, useState } from "react";
 import { Provider } from "react-redux";
 import { describe, expect, it, vi } from "vitest";
 
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { TooltipProvider } from "@easytrim-editor/ui/tooltip";
 
 import { AppDialogsContext } from "@/app/contexts/app-dialogs-context";
 import { AppChaptersDialog } from "@/app/dialogs/AppChaptersDialog";

@@ -3,13 +3,6 @@ import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { describe, expect, it } from "vitest";
 
-import { Button } from "../button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "../dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../tooltip";
 
 function ToggleButtonTooltip({
@@ -39,26 +32,6 @@ function ToggleButtonTooltip({
   );
 }
 
-function MenuTriggerTooltip() {
-  return (
-    <TooltipProvider delayDuration={0}>
-      <DropdownMenu>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <DropdownMenuTrigger asChild>
-              <Button type="button">Open menu</Button>
-            </DropdownMenuTrigger>
-          </TooltipTrigger>
-          <TooltipContent>Menu controls</TooltipContent>
-        </Tooltip>
-        <DropdownMenuContent>
-          <DropdownMenuItem>Menu item</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </TooltipProvider>
-  );
-}
-
 describe("Tooltip", () => {
   it("respects its default open state", () => {
     render(<ToggleButtonTooltip defaultOpen />);
@@ -77,20 +50,6 @@ describe("Tooltip", () => {
     await user.click(trigger);
 
     expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
-  });
-
-  it("closes by default when its trigger also opens a menu", async () => {
-    const user = userEvent.setup();
-    render(<MenuTriggerTooltip />);
-    const trigger = screen.getByRole("button", { name: "Open menu" });
-
-    await user.hover(trigger);
-    expect(await screen.findByRole("tooltip")).toHaveTextContent("Menu controls");
-
-    fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false });
-
-    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
-    expect(screen.getByRole("menuitem", { name: "Menu item" })).toBeInTheDocument();
   });
 
   it("preserves and updates the tooltip during a pointer-triggered click", async () => {

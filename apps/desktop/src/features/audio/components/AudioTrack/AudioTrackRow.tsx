@@ -2,8 +2,10 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { memo, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Button } from "@easytrim-editor/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@easytrim-editor/ui/tooltip";
+
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
@@ -14,7 +16,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectAudioFilterPreview } from "@/app/store/slices/audio-slice";

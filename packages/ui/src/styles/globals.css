@@ -1,0 +1,42 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "./theme.css";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
+@import "@fontsource/inter/800.css";
+@import "@fontsource/inter/900.css";
+
+/* Consumers scan their own sources; register the shared components' class names here. */
+@source "../";
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+/* Radix renders the custom scrollbar alongside a native viewport scrollbar.
+   Hide the native one consistently in browser and packaged WebView2 builds. */
+.scroll-area-viewport {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scroll-area-viewport::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}

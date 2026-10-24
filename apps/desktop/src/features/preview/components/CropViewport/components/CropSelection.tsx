@@ -2,9 +2,10 @@ import { motion, type Transition, useIsPresent } from "motion/react";
 import type { PointerEvent } from "react";
 import { useTranslation } from "react-i18next";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import type { CropRect } from "@/domain/crop";
 import type { RotationDegrees } from "@/domain/rotation";
-import { cn } from "@/lib/class-names.utils";
 
 import type { CropHandle } from "../../../lib/crop-geometry.utils";
 import { sourceCropForRotation } from "../../../lib/preview-geometry";

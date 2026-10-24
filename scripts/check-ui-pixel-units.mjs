@@ -2,6 +2,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { extname, relative, resolve, sep } from "node:path";
 
 const sourceRoot = resolve("apps/desktop/src");
+const sourceRoots = [sourceRoot, resolve("packages/ui/src")];
 const sourceExtensions = new Set([".css", ".scss", ".ts", ".tsx", ".html", ".svg"]);
 const violations = [];
 
@@ -36,12 +37,12 @@ async function visit(directory) {
   }
 }
 
-await visit(sourceRoot);
+for (const root of sourceRoots) await visit(root);
 
 if (violations.length > 0) {
-  console.error("Fixed pixel literals found in desktop frontend source:");
+  console.error("Fixed pixel literals found in frontend source:");
   for (const violation of violations) console.error(`  ${violation}`);
   process.exitCode = 1;
 } else {
-  console.log("Desktop frontend source has no unapproved numeric px literals.");
+  console.log("Frontend source has no unapproved numeric px literals.");
 }

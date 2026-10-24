@@ -1,5 +1,6 @@
+import { TooltipContent } from "@easytrim-editor/ui/tooltip";
+
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
-import { TooltipContent } from "@/components/ui/tooltip";
 
 import type { ApplicationShortcut } from "@/app/commands/core/application-command.types";
 import { getShortcutDisplayKeys } from "@/app/commands/core/application-command.utils";

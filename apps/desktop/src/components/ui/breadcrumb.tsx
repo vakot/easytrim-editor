@@ -4,7 +4,7 @@ import { ChevronRightIcon, MoreHorizontalIcon } from "lucide-react";
 import { Slot } from "radix-ui";
 import * as React from "react";
 
-import { cn } from "@/lib/class-names.utils";
+import { cn } from "@easytrim-editor/ui/class-names";
 
 function Breadcrumb({ className, ...props }: React.ComponentProps<"nav">) {
   return <nav className={cn(className)} data-slot="breadcrumb" {...props} />;

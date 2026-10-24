@@ -1,12 +1,12 @@
-import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from "@easytrim-editor/ui/button";
+import { cn } from "@easytrim-editor/ui/class-names";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@easytrim-editor/ui/tooltip";
 
 import type { ApplicationCommand } from "@/app/commands/core/application-command.types";
 import { getShortcutAriaValue } from "@/app/commands/core/application-command.utils";
 import { ApplicationCommandIcon } from "@/app/components/ApplicationCommandMenuItem";
 import { ShortcutTooltipContent } from "@/app/components/ShortcutTooltipContent";
 import { useApplicationCommand, useApplicationCommands } from "@/app/hooks/useApplicationCommands";
-import { cn } from "@/lib/class-names.utils";
 
 function WorkspaceHistoryNavigation({ className }: { className?: string }) {
   const { executeCommand } = useApplicationCommands();

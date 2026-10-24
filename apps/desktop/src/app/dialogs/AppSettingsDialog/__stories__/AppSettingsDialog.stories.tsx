@@ -4,22 +4,12 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useMemo } from "react";
 import { Provider } from "react-redux";
 
-import { Button } from "@/components/ui/button";
-import { ResizablePanelContextProvider } from "@/components/ui/resizable";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { Button } from "@easytrim-editor/ui/button";
 
-import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { AppSettingsDialog } from "@/app/dialogs/AppSettingsDialog";
 import { useSettingsDialog } from "@/app/hooks/useAppDialog";
-import { AppDialogsProvider } from "@/app/providers/AppDialogsProvider";
-import { ApplicationCommandsProvider } from "@/app/providers/ApplicationCommandsProvider";
-import { EditorRuntimeProviders } from "@/app/providers/EditorRuntimeProviders";
-import { LayoutDensityProvider } from "@/app/providers/LayoutDensityProvider";
 import { createAppStore } from "@/app/store/store";
-import { ThemeProvider } from "@/app/theme/ThemeProvider";
-import { QueueDeleteSourceProvider } from "@/features/export";
-import { PreviewTransformProvider } from "@/features/preview";
-import { SourceDeleteProvider } from "@/features/source";
+import { AppProvidersFixture } from "@/test/app-providers.fixtures";
 
 const meta = {
   component: AppSettingsDialogStory,
@@ -34,38 +24,10 @@ function AppSettingsDialogStory() {
   const store = useMemo(() => createAppStore(), []);
   return (
     <Provider store={store}>
-      <AppUpdatesContext.Provider
-        value={{
-          availableVersion: null,
-          checkForUpdates: async () => undefined,
-          installUpdate: async () => undefined,
-          isInstalling: false,
-          status: "idle",
-        }}
-      >
-        <TooltipProvider>
-          <ThemeProvider>
-            <LayoutDensityProvider>
-              <AppDialogsProvider>
-                <SourceDeleteProvider>
-                  <QueueDeleteSourceProvider>
-                    <PreviewTransformProvider>
-                      <EditorRuntimeProviders>
-                        <ResizablePanelContextProvider>
-                          <ApplicationCommandsProvider>
-                            <AppSettingsDialogStoryControls />
-                            <AppSettingsDialog />
-                          </ApplicationCommandsProvider>
-                        </ResizablePanelContextProvider>
-                      </EditorRuntimeProviders>
-                    </PreviewTransformProvider>
-                  </QueueDeleteSourceProvider>
-                </SourceDeleteProvider>
-              </AppDialogsProvider>
-            </LayoutDensityProvider>
-          </ThemeProvider>
-        </TooltipProvider>
-      </AppUpdatesContext.Provider>
+      <AppProvidersFixture>
+        <AppSettingsDialogStoryControls />
+        <AppSettingsDialog />
+      </AppProvidersFixture>
     </Provider>
   );
 }

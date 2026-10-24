@@ -1,6 +1,6 @@
 import type { ComponentProps } from "react";
 
-import { cn } from "@/lib/class-names.utils";
+import { cn } from "../lib/class-names.utils";
 
 function Ribbon({ children, className, ...props }: ComponentProps<"span">) {
   return (

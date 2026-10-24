@@ -1,4 +1,4 @@
-import { formatDateTime } from "@/lib/date-time.utils";
+import { formatDateTime } from "@easytrim-editor/ui/date-time";
 
 function formatStatisticCount(value: number, locale: string): string {
   return new Intl.NumberFormat(locale).format(value);

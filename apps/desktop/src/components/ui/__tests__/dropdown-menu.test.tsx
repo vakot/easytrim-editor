@@ -3,6 +3,14 @@ import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 
+import { Button } from "@easytrim-editor/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@easytrim-editor/ui/tooltip";
+
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -22,6 +30,26 @@ function renderMenu(item: ReactNode) {
       <DropdownMenuTrigger>Open</DropdownMenuTrigger>
       <DropdownMenuContent>{item}</DropdownMenuContent>
     </DropdownMenu>,
+  );
+}
+
+function MenuTriggerTooltip() {
+  return (
+    <TooltipProvider delayDuration={0}>
+      <DropdownMenu>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger asChild>
+              <Button type="button">Open menu</Button>
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent>Menu controls</TooltipContent>
+        </Tooltip>
+        <DropdownMenuContent>
+          <DropdownMenuItem>Menu item</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </TooltipProvider>
   );
 }
 
@@ -150,5 +178,50 @@ describe("DropdownMenu selection items", () => {
     fireEvent.click(screen.getByRole("menuitem", { name: "Submenu" }));
 
     expect(screen.getByRole("menuitem", { name: "Child" })).toBeInTheDocument();
+  });
+});
+
+describe("DropdownMenu triggers", () => {
+  it("exposes the open state on an assigned Button trigger", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button>Menu</Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>Menu content</DropdownMenuContent>
+      </DropdownMenu>,
+    );
+
+    const button = screen.getByRole("button", { name: "Menu" });
+
+    expect(button).toHaveAttribute("data-state", "closed");
+    expect(button).not.toHaveAttribute("data-open");
+
+    await user.click(button);
+
+    expect(button).toHaveAttribute("data-state", "open");
+    expect(button).toHaveAttribute("data-open", "true");
+    expect(button).toHaveClass("data-open:bg-primary/80");
+
+    fireEvent.pointerDown(button, { button: 0, ctrlKey: false });
+
+    expect(button).toHaveAttribute("data-state", "closed");
+    expect(button).not.toHaveAttribute("data-open");
+  });
+
+  it("closes a trigger tooltip when the menu opens", async () => {
+    const user = userEvent.setup();
+    render(<MenuTriggerTooltip />);
+    const trigger = screen.getByRole("button", { name: "Open menu" });
+
+    await user.hover(trigger);
+    expect(await screen.findByRole("tooltip")).toHaveTextContent("Menu controls");
+
+    fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false });
+
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: "Menu item" })).toBeInTheDocument();
   });
 });

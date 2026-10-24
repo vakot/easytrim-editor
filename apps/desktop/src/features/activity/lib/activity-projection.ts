@@ -1,4 +1,5 @@
-import { getRelativeTimeBucketKey } from "@/lib/date-time.utils";
+import { getRelativeTimeBucketKey } from "@easytrim-editor/ui/date-time";
+
 import type {
   DiagnosticEvent,
   DiagnosticSessionMetadata,

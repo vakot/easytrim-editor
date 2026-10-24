@@ -11,7 +11,7 @@ import {
   useState,
 } from "react";
 
-import { cn } from "@/lib/class-names.utils";
+import { cn } from "@easytrim-editor/ui/class-names";
 
 interface CursorTooltipProps extends ComponentProps<"div"> {
   delayDuration?: number;

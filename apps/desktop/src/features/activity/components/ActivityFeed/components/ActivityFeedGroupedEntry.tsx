@@ -2,11 +2,11 @@ import type { LucideIcon } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { useTranslation } from "react-i18next";
 
-import { Marker, MarkerContent, MarkerIcon, MarkerTitle } from "@/components/ui/marker";
+import { cn } from "@easytrim-editor/ui/class-names";
+import { formatRelativeTime } from "@easytrim-editor/ui/date-time";
+import { useRelativeTimeNow } from "@easytrim-editor/ui/use-relative-time";
 
-import { cn } from "@/lib/class-names.utils";
-import { formatRelativeTime } from "@/lib/date-time.utils";
-import { useRelativeTimeNow } from "@/lib/hooks/use-relative-time";
+import { Marker, MarkerContent, MarkerIcon, MarkerTitle } from "@/components/ui/marker";
 
 import type { ActivityEntry } from "../../../lib/activity-projection";
 import { toTimestampMicros } from "../lib/activity-feed.utils";

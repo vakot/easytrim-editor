@@ -4,7 +4,8 @@ import userEvent from "@testing-library/user-event";
 import { ChevronsUpDownIcon } from "lucide-react";
 import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@easytrim-editor/ui/button";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
