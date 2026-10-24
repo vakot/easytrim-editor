@@ -5,7 +5,6 @@ import { useState } from "react";
 import { Provider } from "react-redux";
 
 import { Button } from "@easytrim-editor/ui/button";
-import { TooltipProvider } from "@easytrim-editor/ui/tooltip";
 
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
 import {
@@ -16,6 +15,7 @@ import {
 } from "@/app/store/slices/editing-instances-slice";
 import { createExportAttempt } from "@/domain/editing-instance";
 import { ExportDialog } from "@/features/export";
+import { AppProvidersFixture } from "@/test/app-providers.fixtures";
 import { firstSource } from "@/test/source.fixtures";
 
 import { ExportActions } from "../ExportActions";
@@ -109,7 +109,7 @@ function ExportActionsQueuePulseStory() {
 
   return (
     <Provider store={store}>
-      <TooltipProvider>
+      <AppProvidersFixture>
         <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-card p-4">
           <ExportDialog>
             <ExportActions />
@@ -134,7 +134,7 @@ function ExportActionsQueuePulseStory() {
             Fail latest
           </Button>
         </div>
-      </TooltipProvider>
+      </AppProvidersFixture>
     </Provider>
   );
 }
