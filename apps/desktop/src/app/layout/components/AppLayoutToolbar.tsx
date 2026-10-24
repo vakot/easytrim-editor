@@ -1,3 +1,5 @@
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -7,7 +9,6 @@ import { ApplicationCommandIcon } from "@/app/components/ApplicationCommandMenuI
 import { ShortcutTooltipContent } from "@/app/components/ShortcutTooltipContent";
 import { useApplicationCommand, useApplicationCommands } from "@/app/hooks/useApplicationCommands";
 import { Ping } from "@/components/ping";
-import { cn } from "@/lib/class-names.utils";
 
 function AppLayoutToolbar() {
   return (

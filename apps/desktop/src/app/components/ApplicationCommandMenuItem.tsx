@@ -7,6 +7,8 @@ import {
   useContext,
 } from "react";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { menuClassNames } from "@/components/ui/menu";
 import { Slot } from "@/components/ui/slot";
@@ -18,7 +20,6 @@ import {
   getShortcutDisplayKeys,
 } from "@/app/commands/core/application-command.utils";
 import { useApplicationCommand, useApplicationCommands } from "@/app/hooks/useApplicationCommands";
-import { cn } from "@/lib/class-names.utils";
 
 interface ApplicationCommandMenuContextValue {
   command: ApplicationCommand;

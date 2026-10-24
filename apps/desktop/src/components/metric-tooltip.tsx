@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@easytrim-editor/ui/class-names";
 
-import { cn } from "@/lib/class-names.utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 function MetricTooltip({
   ariaLabel,

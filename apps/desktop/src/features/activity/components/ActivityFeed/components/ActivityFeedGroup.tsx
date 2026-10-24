@@ -2,10 +2,11 @@ import { CircleX } from "lucide-react";
 import { AnimatePresence } from "motion/react";
 import { useTranslation } from "react-i18next";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import { Marker, MarkerContent } from "@/components/ui/marker";
 
 import { RelativeTimestamp } from "@/components/relative-timestamp";
-import { cn } from "@/lib/class-names.utils";
 
 import {
   type ActivityAction,

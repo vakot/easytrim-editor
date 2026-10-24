@@ -5,6 +5,8 @@ import { Fragment, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from "@/components/ui/context-menu";
@@ -23,7 +25,6 @@ import type {
   SidebarViewId,
 } from "@/app/layout/lib/sidebar-layout";
 import type { SidebarViewHosts } from "@/app/layout/lib/sidebar-view-hosts";
-import { cn } from "@/lib/class-names.utils";
 
 interface AppLayoutSidebarProps {
   draggingViewId: SidebarViewId | null;

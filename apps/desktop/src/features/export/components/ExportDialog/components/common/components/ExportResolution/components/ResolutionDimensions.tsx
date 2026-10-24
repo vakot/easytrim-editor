@@ -1,13 +1,14 @@
 import { Link2, Unlink2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import type { ExportSettings } from "@/domain/editing-instance";
-import { cn } from "@/lib/class-names.utils";
 
 function ResolutionDimensions({
   cropAspectRatio,

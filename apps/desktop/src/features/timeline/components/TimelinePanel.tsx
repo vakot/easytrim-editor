@@ -11,6 +11,8 @@ import {
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import { Button } from "@/components/ui/button";
 
 import type { ApplicationShortcut } from "@/app/commands/core/application-command.types";
@@ -34,7 +36,6 @@ import {
   usePlaybackPosition,
   useTimelinePlayback,
 } from "@/features/playback";
-import { cn } from "@/lib/class-names.utils";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 import { isApplicationInteractionBlocked, isPlaybackShortcutBlocked } from "@/lib/hotkeys.utils";
 

@@ -1,6 +1,6 @@
-import { Card } from "@/components/ui/card";
+import { cn } from "@easytrim-editor/ui/class-names";
 
-import { cn } from "@/lib/class-names.utils";
+import { Card } from "@/components/ui/card";
 
 interface AppLayoutPanelProps {
   children?: React.ReactNode;

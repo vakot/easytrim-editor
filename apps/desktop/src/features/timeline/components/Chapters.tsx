@@ -2,6 +2,8 @@ import { BookmarkPlus, Pencil, Trash2 } from "lucide-react";
 import type { ComponentProps } from "react";
 import { useTranslation } from "react-i18next";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Item, ItemActions, ItemContent, ItemDescription, ItemTitle } from "@/components/ui/item";
@@ -11,7 +13,6 @@ import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { chapterDeleted, selectChapters } from "@/app/store/slices/chapters-slice";
 import { selectSourceMedia } from "@/app/store/slices/source-slice";
 import type { EditorChapter } from "@/domain/media";
-import { cn } from "@/lib/class-names.utils";
 
 import { ChapterDialog, ChapterDialogTrigger } from "../dialogs/ChapterDialog";
 import { formatTimecode } from "../lib/timecode";

@@ -1,9 +1,10 @@
 import { useMemo } from "react";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectExportQueueItem } from "@/app/store/slices/editing-instances-slice";
 import { selectRunningExportMetrics } from "@/app/store/slices/export-slice";
-import { cn } from "@/lib/class-names.utils";
 
 import { ExportQueueItemContext } from "./contexts/ExportQueueItemContext";
 

@@ -2,10 +2,11 @@
 
 import * as React from "react";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import { Input } from "@/components/ui/input";
 import { Slot } from "@/components/ui/slot";
 
-import { cn } from "@/lib/class-names.utils";
 import type { HexColor, HsvColor } from "@/lib/color.types";
 import {
   clampHue,

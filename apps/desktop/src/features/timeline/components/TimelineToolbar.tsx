@@ -1,6 +1,8 @@
 import { BetweenVerticalStart, Clapperboard, Repeat, Save } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -23,7 +25,6 @@ import {
 import { selectSourceReady } from "@/app/store/slices/source-slice";
 import { detectActiveSourceScenes } from "@/app/store/thunks/scene-detection-thunks";
 import { localizeAppError } from "@/i18n/app-errors";
-import { cn } from "@/lib/class-names.utils";
 
 import { useChapterEditing } from "../contexts/chapter-editing-context";
 

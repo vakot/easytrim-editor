@@ -2,6 +2,8 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { CheckIcon, ChevronsUpDownIcon } from "lucide-react";
 import * as React from "react";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import { Button } from "@/components/ui/button";
 import {
   Combobox,
@@ -26,8 +28,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MenuIcon } from "@/components/ui/menu";
-
-import { cn } from "@/lib/class-names.utils";
 
 const frameworks = [
   {

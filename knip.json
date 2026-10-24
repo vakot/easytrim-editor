@@ -38,6 +38,10 @@
         "src/**/*.spec.ts",
         "src/**/*.spec.tsx"
       ]
+    },
+    "packages/ui": {
+      "project": ["src/**/*.ts!", "src/**/*.tsx!"],
+      "ignore": ["src/test/**", "src/**/__stories__/**", "src/**/__tests__/**"]
     }
   }
 }

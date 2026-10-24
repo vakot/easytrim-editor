@@ -1,10 +1,11 @@
 import { useReducedMotion } from "motion/react";
 import type { CSSProperties } from "react";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import { Confetti } from "@/components/confetti";
 import { Ribbon } from "@/components/ribbon";
 import { TextReveal } from "@/components/text-reveal";
-import { cn } from "@/lib/class-names.utils";
 
 import { achievementTierClassNames } from "../consts/achievement-tier-styles.consts";
 import {

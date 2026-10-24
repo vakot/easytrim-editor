@@ -3,11 +3,12 @@
 import { Slider as SliderPrimitive } from "radix-ui";
 import * as React from "react";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useDragAwareDoubleClick } from "@/components/useDragAwareDoubleClick";
 import { useSliderSnapping } from "@/components/useSliderSnapping";
-import { cn } from "@/lib/class-names.utils";
 
 interface SliderMarker {
   label: React.ReactNode;

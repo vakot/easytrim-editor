@@ -1,9 +1,9 @@
 import { CircleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { Badge } from "@/components/ui/badge";
+import { cn } from "@easytrim-editor/ui/class-names";
 
-import { cn } from "@/lib/class-names.utils";
+import { Badge } from "@/components/ui/badge";
 
 import { useSourceCardData } from "../hooks/useSourceCardData";
 import {

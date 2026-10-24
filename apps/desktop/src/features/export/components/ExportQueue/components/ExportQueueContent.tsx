@@ -1,6 +1,8 @@
 import { MoreVertical } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -12,8 +14,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-
-import { cn } from "@/lib/class-names.utils";
 
 import {
   ExportQueueItem,

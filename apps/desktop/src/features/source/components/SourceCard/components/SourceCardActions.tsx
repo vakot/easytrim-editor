@@ -2,6 +2,8 @@ import { ExternalLink, RotateCcw, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import { CardAction } from "@/components/ui/card";
 import {
   DropdownMenu,
@@ -13,7 +15,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-import { cn } from "@/lib/class-names.utils";
 import { openFileLocation } from "@/lib/tauri/media";
 
 import { getRevealLabel } from "../../../lib/source.utils";

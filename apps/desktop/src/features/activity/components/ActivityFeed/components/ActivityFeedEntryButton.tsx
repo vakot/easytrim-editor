@@ -2,11 +2,12 @@ import type { TFunction } from "i18next";
 import { ExternalLink, type LucideIcon, RotateCcw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { RestoreSource } from "@/features/source";
-import { cn } from "@/lib/class-names.utils";
 
 import type { ActivityAction, ActivityEntry } from "../../../lib/activity-projection";
 

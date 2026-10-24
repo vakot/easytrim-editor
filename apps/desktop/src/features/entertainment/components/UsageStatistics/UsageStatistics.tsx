@@ -18,6 +18,8 @@ import {
 import React, { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import { Item, ItemContent, ItemDescription, ItemMedia } from "@/components/ui/item";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -37,7 +39,6 @@ import {
   getFileSizeChangeRatio,
 } from "@/domain/export-metrics";
 import { getCompletedExports, getStorageSavedBytes } from "@/domain/usage-statistics";
-import { cn } from "@/lib/class-names.utils";
 import { formatRelativeTime } from "@/lib/date-time.utils";
 
 import {

@@ -1,5 +1,7 @@
 import { Suspense } from "react";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import {
   ResizableHandle,
   ResizablePanel,
@@ -19,7 +21,6 @@ import { ExportActions } from "@/features/export";
 import { Preview } from "@/features/preview";
 import { SourceBreadcrumb } from "@/features/source";
 import { TimelineAxisScope, TimelinePanel } from "@/features/timeline";
-import { cn } from "@/lib/class-names.utils";
 
 import { useSidebarVisibility } from "../hooks/useSidebarVisibility";
 

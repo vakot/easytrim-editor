@@ -1,5 +1,7 @@
 import { useDroppable } from "@dnd-kit/react";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 
 import { AppLayoutMain } from "@/app/layout/components/AppLayoutMain";
@@ -14,7 +16,6 @@ import type {
 import type { SidebarViewHosts } from "@/app/layout/lib/sidebar-view-hosts";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectLayoutDensity } from "@/app/store/slices/preferences-slice";
-import { cn } from "@/lib/class-names.utils";
 
 import { useSidebarPresence } from "../hooks/useSidebarPresence";
 import type { SidebarVisibility } from "../hooks/useSidebarVisibility";

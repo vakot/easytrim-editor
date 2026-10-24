@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 import { useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import { Button } from "@/components/ui/button";
 import {
   Empty,
@@ -23,7 +25,6 @@ import { restorePreviousWorkspaceRequested } from "@/app/store/recovery/workspac
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectEditingInstances } from "@/app/store/slices/editing-instances-slice";
 import { chooseSourceRequested } from "@/app/store/thunks/source-media-thunks";
-import { cn } from "@/lib/class-names.utils";
 
 import styles from "./SourceListEmpty.module.css";
 

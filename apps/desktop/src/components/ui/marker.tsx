@@ -4,7 +4,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { Slot } from "radix-ui";
 import * as React from "react";
 
-import { cn } from "@/lib/class-names.utils";
+import { cn } from "@easytrim-editor/ui/class-names";
 
 const markerVariants = cva(
   "group/marker relative min-h-4 w-full min-w-0 text-left text-sm text-muted-foreground [&_svg:not([class*='size-'])]:size-4 [a]:underline [a]:underline-offset-3 [a]:hover:text-foreground",

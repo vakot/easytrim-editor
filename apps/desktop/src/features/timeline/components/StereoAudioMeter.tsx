@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import {
   amplitudeToMeterLevel,
   meterZoneLevels,
@@ -10,7 +12,6 @@ import {
   useAudioPlaybackAdapter,
 } from "@/features/audio";
 import { usePlaybackIsPlaying } from "@/features/playback";
-import { cn } from "@/lib/class-names.utils";
 
 const METER_MARKERS = [
   { level: 0, label: "−60 dBFS" },

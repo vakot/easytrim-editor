@@ -1,10 +1,10 @@
 import { SlidersHorizontal } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-
-import { cn } from "@/lib/class-names.utils";
 
 import { AudioTrackFiltersDialogTrigger } from "../../../dialogs/AudioTrackFiltersDialog";
 import { useAudioTrackController } from "../../../hooks/useAudioTrackController";

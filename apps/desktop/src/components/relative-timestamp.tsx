@@ -3,9 +3,10 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-import { cn } from "@/lib/class-names.utils";
 import { formatDateTime, formatRelativeTime } from "@/lib/date-time.utils";
 import { useRelativeTimeNow } from "@/lib/hooks/use-relative-time";
 

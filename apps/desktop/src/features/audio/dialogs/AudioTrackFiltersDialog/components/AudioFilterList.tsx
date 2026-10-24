@@ -14,6 +14,8 @@ import {
 import type { ComponentProps } from "react";
 import { useTranslation } from "react-i18next";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,7 +46,6 @@ import {
   isAudioSyncOffsetWithinRange,
   MAX_AUDIO_FILTERS,
 } from "@/domain/audio-processing";
-import { cn } from "@/lib/class-names.utils";
 
 import { useAudioFiltersDraft } from "../contexts/audio-filters-draft-context";
 import { audioFilterLabel } from "../lib/audio-filter-label";

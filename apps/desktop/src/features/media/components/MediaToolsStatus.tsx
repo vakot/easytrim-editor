@@ -15,6 +15,8 @@ import { createContext, useContext, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
@@ -24,7 +26,6 @@ import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectCapabilities } from "@/app/store/slices/source-slice";
 import { checkMediaCapabilitiesRequested } from "@/app/store/thunks/source-media-thunks";
 import { localizeAppError } from "@/i18n/app-errors";
-import { cn } from "@/lib/class-names.utils";
 import { openExternalUrl } from "@/lib/open-external-url.utils";
 import { openFileLocation } from "@/lib/tauri/media";
 import type {

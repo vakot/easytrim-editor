@@ -1,4 +1,4 @@
-import { cn } from "@/lib/class-names.utils";
+import { cn } from "@easytrim-editor/ui/class-names";
 
 import { useExportQueueItem } from "../contexts/ExportQueueItemContext";
 

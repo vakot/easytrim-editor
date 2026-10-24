@@ -2,6 +2,8 @@ import { Volume1, Volume2, VolumeOff } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import { Button } from "@/components/ui/button";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Slider } from "@/components/ui/slider";
@@ -14,7 +16,6 @@ import {
   selectPlaybackVolumePercent,
 } from "@/app/store/slices/preferences-slice";
 import { useAudioPlaybackAdapter } from "@/features/audio";
-import { cn } from "@/lib/class-names.utils";
 
 function PlaybackVolumeControl() {
   return (

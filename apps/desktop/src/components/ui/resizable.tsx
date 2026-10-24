@@ -4,7 +4,7 @@ import { Slot } from "radix-ui";
 import * as React from "react";
 import * as ResizablePrimitive from "react-resizable-panels";
 
-import { cn } from "@/lib/class-names.utils";
+import { cn } from "@easytrim-editor/ui/class-names";
 
 type PanelId = string;
 type PanelRef = React.RefObject<ResizablePrimitive.PanelImperativeHandle | null>;

@@ -43,6 +43,8 @@ import Fuse from "fuse.js";
 import { CheckIcon } from "lucide-react";
 import * as React from "react";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import {
   Combobox,
   ComboboxContent,
@@ -54,7 +56,6 @@ import {
   ComboboxTrigger,
 } from "@/components/ui/combobox";
 
-import { cn } from "@/lib/class-names.utils";
 import { FUZZY_SEARCH_OPTIONS } from "@/lib/fuzzy-search.consts";
 
 interface LanguageOption {

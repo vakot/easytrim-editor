@@ -2,9 +2,9 @@ import { forwardRef } from "react";
 import { useTranslation } from "react-i18next";
 import { type ListProps, type ScrollSeekPlaceholderProps, Virtuoso } from "react-virtuoso";
 
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@easytrim-editor/ui/class-names";
 
-import { cn } from "@/lib/class-names.utils";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { useSourceListData } from "../contexts/SourceListContext";
 import { useSourceListScrollController } from "../hooks/useSourceListScrollController";

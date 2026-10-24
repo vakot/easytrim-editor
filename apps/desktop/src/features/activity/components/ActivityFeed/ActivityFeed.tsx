@@ -1,12 +1,13 @@
 import React, { useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectActivityFeedView } from "@/app/store/slices/preferences-slice";
 import { getCurrentVersion } from "@/lib/app-version.utils";
-import { cn } from "@/lib/class-names.utils";
 import { useRelativeTimeNow } from "@/lib/hooks/use-relative-time";
 import { openFileLocation } from "@/lib/tauri/media";
 

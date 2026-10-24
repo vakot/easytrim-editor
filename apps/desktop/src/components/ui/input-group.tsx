@@ -1,10 +1,10 @@
 "use client";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-
-import { cn } from "@/lib/class-names.utils";
 
 function InputGroup({ className, ...props }: React.ComponentProps<"div">) {
   return (

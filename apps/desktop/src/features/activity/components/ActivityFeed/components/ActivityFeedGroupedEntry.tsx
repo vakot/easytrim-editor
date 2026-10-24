@@ -2,9 +2,10 @@ import type { LucideIcon } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { useTranslation } from "react-i18next";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import { Marker, MarkerContent, MarkerIcon, MarkerTitle } from "@/components/ui/marker";
 
-import { cn } from "@/lib/class-names.utils";
 import { formatRelativeTime } from "@/lib/date-time.utils";
 import { useRelativeTimeNow } from "@/lib/hooks/use-relative-time";
 

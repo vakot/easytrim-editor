@@ -3,7 +3,7 @@
 import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
 
-import { cn } from "@/lib/class-names.utils";
+import { cn } from "@easytrim-editor/ui/class-names";
 
 const emptyMediaVariants = cva("flex shrink-0 items-center justify-center", {
   variants: {
