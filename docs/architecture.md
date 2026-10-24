@@ -93,8 +93,8 @@ own Vite and Tailwind build, so it has no build step or `dist` output.
   private; widen the export map deliberately instead of deep-importing.
 - **Styles.** A consumer imports `@easytrim-editor/ui/globals.css` once instead of importing
   Tailwind directly. That stylesheet brings Tailwind, the shared animation and variant layers, the
-  semantic token contract, and the base layer, and registers the package sources for class
-  scanning. Consumer stylesheets add only consumer-specific tokens, such as the desktop
+  semantic token contract, the Inter font, and the base layer, and registers the package sources
+  for class scanning. Consumer stylesheets add only consumer-specific tokens, such as the desktop
   achievement, sidebar, and preview colors.
 - **What stays in desktop.** Product-bound UI stays with its owner even when it reuses shared
   primitives: achievement cards and toasts, feature containers, and Redux-connected controls.
