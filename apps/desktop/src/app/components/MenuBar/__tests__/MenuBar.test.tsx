@@ -366,62 +366,24 @@ describe("MenuBarTest", () => {
     );
   }
 
-  it("keeps the top-level menus in their expected order", () => {
+  it("keeps the desktop top-level menus in their expected order", () => {
     renderMenus();
     const menuButtons = screen
       .getByRole("menubar", { name: "Application menus" })
       .querySelectorAll("button");
 
     const labels = [...menuButtons].map((button) => button.textContent);
-    expect(labels).toEqual(["File", "Edit", "View", "Settings", "Help"]);
+    expect(labels).toEqual(["File", "View", "Settings", "Help"]);
   });
 
-  it("shows available Undo and Redo entries with descriptive names and shortcut labels", async () => {
+  it("omits Edit from the compact menu", async () => {
     const user = userEvent.setup();
-    const target = { instanceId: "source", kind: "instance", sourceId: "C:/Media/source.mp4" };
-    menuState.workspaceHistory.operations = [
-      {
-        changes: [
-          {
-            field: "crop",
-            before: { present: true, value: null },
-            after: { present: true, value: {} },
-            target,
-          },
-        ],
-        id: "crop",
-        kind: "state",
-        label: "Change crop",
-        role: "edit",
-        timestamp: 1,
-      },
-      {
-        changes: [
-          {
-            field: "trim",
-            before: { present: true, value: {} },
-            after: { present: true, value: {} },
-            target,
-          },
-        ],
-        id: "trim",
-        kind: "state",
-        label: "Adjust trim",
-        role: "edit",
-        timestamp: 2,
-      },
-    ];
-    menuState.workspaceHistory.position = 1;
-    renderMenus({ hasSource: true });
+    renderMenus();
 
-    await user.click(getMenuTrigger("Edit"));
+    const compactMenubar = screen.getAllByRole("menubar")[1];
+    await user.click(within(compactMenubar).getByRole("menuitem", { name: "Application menus" }));
 
-    const undoItem = screen.getByRole("menuitem", { name: /Undo/ });
-    const redoItem = screen.getByRole("menuitem", { name: /Redo/ });
-    expect(undoItem).toHaveTextContent("CtrlZ");
-    expect(undoItem).toBeEnabled();
-    expect(redoItem).toHaveTextContent("CtrlShiftZ");
-    expect(redoItem).toBeEnabled();
+    expect(screen.queryByRole("menuitem", { name: "Edit", exact: true })).not.toBeInTheDocument();
   });
 
   it("opens the Command Palette from View", async () => {
