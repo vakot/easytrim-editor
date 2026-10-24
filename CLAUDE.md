@@ -23,6 +23,7 @@ pnpm format:check | lint | knip | typecheck | typecheck:storybook | test | test:
 pnpm i18n:check          # translation validation (also part of `pnpm lint`)
 pnpm storybook
 pnpm --filter @easytrim-editor/desktop exec vitest run <path>   # single test file
+pnpm --filter @easytrim-editor/ui exec vitest run <path>        # single shared-UI test file
 ```
 
 Native checks (workspace `Cargo.toml` at root, crate `easytrim-editor-desktop`):
@@ -50,6 +51,8 @@ apps/desktop/            the only app (coupled React + Tauri)
     i18n/                locales (en canonical, ru), schema, validation
     test/                shared test setup, factories, mocks
   src-tauri/             Rust crate: commands/ -> application/ -> domain/ media/ process/, state.rs
+packages/ui/             @easytrim-editor/ui: source-only shared primitives, effects, tokens, cn
+                         (consumed via package `exports` subpaths; no desktop/Tauri/Redux/i18n)
 scripts/                 dev, release, versioning, changelog, i18n tooling (tests in scripts/__tests__)
 docs/                    architecture, state-management, runtime-security, code-conventions, etc.
 ```

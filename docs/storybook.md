@@ -1,6 +1,6 @@
 # Storybook
 
-Storybook documents the local design system used by the desktop application. Its scope is limited to reusable modules under `apps/desktop/src/components/**`; feature screens and application workflows remain outside the Storybook catalog.
+Storybook documents the local design system used by the desktop application. Its scope is limited to reusable modules under `apps/desktop/src/components/**` and `packages/ui/src/components/**`; feature screens and application workflows remain outside the Storybook catalog.
 
 ## Commands
 
@@ -30,7 +30,7 @@ The repository check includes the Storybook typecheck and production build. The 
 
 Each meaningful module should have a useful default state and representative variants where they exist. Use a consistent taxonomy such as `Default`, `Variants`, `Sizes`, `States`, `Disabled`, and `Interactive`; name stories after the behavior a reviewer should inspect.
 
-Stories may define small display-only helpers locally, but must not add story-only APIs to production components or duplicate application-level fixtures. Keep examples neutral and focused on the public component contract. New reusable components under `src/components` should add or update their matching story as part of the same change.
+Stories may define small display-only helpers locally, but must not add story-only APIs to production components or duplicate application-level fixtures. Keep examples neutral and focused on the public component contract. New reusable components under either components directory should add or update their matching story as part of the same change.
 
 Storybook files are included in formatting, linting, TypeScript, and build checks. Keep imports, Tailwind classes, accessibility attributes, and controls compatible with those checks. Components that are intentionally excluded from the catalog must be called out in the change description and reviewed against the component inventory.
 
