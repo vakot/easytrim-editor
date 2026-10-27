@@ -721,22 +721,6 @@ describe("AudioTrackRow", () => {
     expect(lineTo).toHaveBeenCalledTimes(drawnLineCount);
   });
 
-  it("switches the waveform display between peak, RMS, and stereo", async () => {
-    const user = userEvent.setup();
-    renderRow();
-
-    const select = screen.getByRole("combobox", { name: "Waveform display" });
-    expect(select).toHaveTextContent("Peak");
-
-    await user.click(select);
-    await user.click(await screen.findByRole("option", { name: /rms/i }));
-    expect(select).toHaveTextContent("RMS");
-
-    await user.click(select);
-    await user.click(await screen.findByRole("option", { name: /stereo/i }));
-    expect(select).toHaveTextContent("Stereo");
-  });
-
   it("reports an undisplayable waveform and retries it", async () => {
     const user = userEvent.setup();
     mockCanvas();
@@ -930,7 +914,6 @@ describe("AudioTrackRow", () => {
   it("switches the waveform display from the actions and context menus", async () => {
     const user = userEvent.setup();
     renderRow();
-    const select = screen.getByRole("combobox", { name: "Waveform display" });
 
     await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
     await user.click(screen.getByRole("menuitem", { name: "Waveform display" }));
@@ -940,7 +923,6 @@ describe("AudioTrackRow", () => {
     );
     await selectWithKeyboard(user, screen.getByRole("menuitemradio", { name: "RMS" }));
 
-    expect(select).toHaveTextContent("RMS");
     expect(screen.getByRole("menuitemradio", { name: "RMS" })).toHaveAttribute(
       "aria-checked",
       "true",
@@ -954,8 +936,14 @@ describe("AudioTrackRow", () => {
       "true",
     );
     await selectWithKeyboard(user, screen.getByRole("menuitemradio", { name: "Stereo" }));
+    await user.keyboard("{Escape}");
 
-    expect(select).toHaveTextContent("Stereo");
+    await user.click(screen.getByRole("button", { name: /audio 1 actions/i }));
+    await user.click(screen.getByRole("menuitem", { name: "Waveform display" }));
+    expect(await screen.findByRole("menuitemradio", { name: "Stereo" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
   });
 
   it("makes an enabled track the default from its actions menu", async () => {
@@ -1289,9 +1277,7 @@ describe("AudioTrackRow", () => {
       renderRow();
       const corner = shortcut().parentElement!;
       expect(corner).toHaveClass("absolute", "top-0", "left-0");
-      expect(corner.closest("[data-enabled]")).toContainElement(
-        screen.getByRole("combobox", { name: "Waveform display" }),
-      );
+      expect(corner.closest("[data-enabled]")).not.toBeNull();
       expect(corner).not.toContainElement(
         document.querySelector("[data-slot='audio-track-volume-indicator']"),
       );

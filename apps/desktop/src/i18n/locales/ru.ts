@@ -395,11 +395,8 @@ export const ru = {
     waveform: {
       displayMode: {
         label: "Отображение формы волны",
-        peakDescription: "амплитуда кратковременных пиков",
         peakShort: "Пики",
-        rmsDescription: "средняя энергия сигнала",
         rmsShort: "RMS",
-        stereoDescription: "активность левого и правого каналов",
         stereoShort: "Стерео",
       },
       preparing: "Подготовка формы волны…",

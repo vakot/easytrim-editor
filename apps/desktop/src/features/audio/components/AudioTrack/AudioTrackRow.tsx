@@ -9,13 +9,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@easytrim-editor/ui/too
 import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectAudioFilterPreview } from "@/app/store/slices/audio-slice";
@@ -30,13 +23,7 @@ import { AudioTrackFiltersDialog } from "../../dialogs/AudioTrackFiltersDialog";
 import { AudioTrackMetadataDialog } from "../../dialogs/AudioTrackMetadataDialog";
 import { useAudioTrackController } from "../../hooks/useAudioTrackController";
 import { formatTrackVolume } from "../../lib/audio-level.utils";
-import {
-  isWaveformDisplayMode,
-  WAVEFORM_DISPLAY_MODES,
-  type WaveformDisplayMode,
-  waveformDisplayModeDescription,
-  waveformDisplayModeLabel,
-} from "../../lib/waveform-display-mode";
+import type { WaveformDisplayMode } from "../../lib/waveform-display-mode";
 
 import { AudioTrackActions, AudioTrackContextMenuContent } from "./components/AudioTrackActions";
 import { AudioTrackDetails } from "./components/AudioTrackDetails";
@@ -166,7 +153,7 @@ function AudioTrackRowWaveform({
 
   return (
     <div
-      className="relative size-full h-12.5 min-w-0 overflow-hidden rounded-sm border border-border bg-muted/30 text-muted transition-opacity first-of-type:rounded-t-lg last-of-type:rounded-b-lg data-[enabled=false]:opacity-50"
+      className="relative size-full h-12.5 min-w-0 overflow-hidden rounded-md border border-border bg-muted/30 text-muted transition-opacity data-[enabled=false]:opacity-50"
       data-enabled={track.enabled}
       data-slot="audio-sync-interaction"
       onClick={(event) => {
@@ -317,9 +304,6 @@ function AudioTrackRowWaveform({
           </PopoverContent>
         </Popover>
       </div>
-      <div className="absolute top-1 right-1 z-4">
-        <AudioTrackDisplaySelect streamIndex={streamIndex} />
-      </div>
 
       {/* Ranges present when the row mounts appear without animating; later ones fade in and out. */}
       <AnimatePresence initial={false}>
@@ -456,44 +440,6 @@ function isAudioPositionAvailable(
     boundaries.hasVisibleAudio &&
     micros >= boundaries.effectiveStartMicros &&
     micros < boundaries.effectiveEndMicros
-  );
-}
-
-function AudioTrackDisplaySelect({ streamIndex }: { streamIndex: number }) {
-  const { t } = useTranslation();
-  const { displayMode, setDisplayMode } = useAudioTrackDisplayMode();
-
-  return (
-    <>
-      <Select
-        onValueChange={(value) => {
-          if (isWaveformDisplayMode(value)) setDisplayMode(value);
-        }}
-        value={displayMode}
-      >
-        <SelectTrigger
-          aria-describedby={`audio-waveform-mode-description-${streamIndex}`}
-          aria-label={t("audio.waveform.displayMode.label")}
-          className="bg-background/25! text-foreground backdrop-blur-xs"
-          size="sm"
-        >
-          <SelectValue>{waveformDisplayModeLabel(displayMode, t)}</SelectValue>
-        </SelectTrigger>
-        <SelectContent align="end">
-          {WAVEFORM_DISPLAY_MODES.map((mode) => (
-            <SelectItem key={mode} value={mode}>
-              {waveformDisplayModeLabel(mode, t)}
-              <span className="text-muted-foreground!">
-                {waveformDisplayModeDescription(mode, t)}
-              </span>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <span className="sr-only" id={`audio-waveform-mode-description-${streamIndex}`}>
-        {waveformDisplayModeDescription(displayMode, t)}
-      </span>
-    </>
   );
 }
 
