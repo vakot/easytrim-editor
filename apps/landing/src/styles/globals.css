@@ -1,11 +1,8 @@
 @import "@easytrim-editor/ui/globals.css";
 
+/* Sections offset their own anchor targets with `scroll-mt-16` to clear the sticky header. A root
+   scroll padding would also apply to focus inside that header and scroll the page on every click. */
 @layer base {
-  html {
-    /* Keeps in-page targets clear of the sticky header. */
-    scroll-padding-top: 5rem;
-  }
-
   @media (prefers-reduced-motion: no-preference) {
     html {
       scroll-behavior: smooth;
