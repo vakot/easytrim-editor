@@ -6,8 +6,8 @@ import { LandingScreenshot } from "./LandingScreenshot";
 
 const sourcePoints = [
   "Find any source with search",
-  "See each video's thumbnail, duration, and size at a glance",
-  "Files removed from disk are flagged",
+  "See each video's details at a glance",
+  "Remove leftovers after trim",
 ] as const;
 
 function LandingShowcase() {
@@ -37,7 +37,7 @@ function LandingShowcase() {
             <span className="text-lg font-semibold">A timeline made for the cut</span>
             <span className="text-muted-foreground">
               The selected segment, its timecodes, live audio levels, and every track&rsquo;s
-              waveform sit together, so you always know exactly what you are about to export.
+              waveform sit together, so you always see and hear exactly what you are about to save.
             </span>
           </figcaption>
         </figure>
@@ -47,7 +47,7 @@ function LandingShowcase() {
             <h3 className="text-2xl font-bold tracking-tight">Every source in one workspace</h3>
             <p className="mt-4 text-muted-foreground">
               Import several videos and switch between them from one list, then send each clip to
-              Fast Export, Optimized Export, or the Export Queue.
+              the Export Queue.
             </p>
             <ul className="mt-6 grid gap-3 text-sm">
               {sourcePoints.map((point) => (

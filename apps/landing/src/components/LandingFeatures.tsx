@@ -1,4 +1,4 @@
-import { AudioLines, Crop, ListOrdered, type LucideIcon, Scissors, Zap } from "lucide-react";
+import { AudioLines, Crop, ListOrdered, type LucideIcon, Play, Scissors, Zap } from "lucide-react";
 
 import { cn } from "@easytrim-editor/ui/class-names";
 
@@ -9,17 +9,24 @@ type Feature = {
   title: string;
 };
 
-/** The five capabilities, laid out as two wide cards over three on large screens. */
+/** The six capabilities, laid out as two rows of three on large screens. */
 const features: readonly Feature[] = [
   {
-    className: "lg:col-span-3",
+    className: "lg:col-span-2",
     description:
-      "Set in and out points on a frame-accurate timeline with timecodes, keyboard shortcuts, and loop playback of the selected segment.",
+      "Set in and out points on a frame-accurate timeline with timecodes and keyboard shortcuts.",
     icon: Scissors,
     title: "Precise trimming",
   },
   {
-    className: "lg:col-span-3",
+    className: "lg:col-span-2",
+    description:
+      "Play just the selected segment or loop it, step frame by frame, and change playback speed.",
+    icon: Play,
+    title: "Playback",
+  },
+  {
+    className: "lg:col-span-2",
     description:
       "Crop the frame to a new size, then move, resize, and loop the selected segment until it is exactly right.",
     icon: Crop,
@@ -28,9 +35,9 @@ const features: readonly Feature[] = [
   {
     className: "lg:col-span-2",
     description:
-      "See every audio track as a waveform, choose which ones to keep, and adjust volume, sync, and filters before export.",
+      "See every audio track as a waveform, choose which ones to keep, and adjust volume, sync, and filters.",
     icon: AudioLines,
-    title: "Audio waveforms and mixing",
+    title: "Audio controls and mixing",
   },
   {
     className: "lg:col-span-2",
@@ -42,7 +49,7 @@ const features: readonly Feature[] = [
   {
     className: "lg:col-span-2",
     description:
-      "Line up as many exports as you need. They run one at a time while you keep working on the next clip.",
+      "Line up as many export jobs as you need. They run one at a time while you keep working on the next clip or making some coffee.",
     icon: ListOrdered,
     title: "Export Queue",
   },
