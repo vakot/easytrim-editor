@@ -5,6 +5,8 @@ import { Button } from "@easytrim-editor/ui/button";
 
 import { DOWNLOAD_URL, REPOSITORY_URL } from "../consts/links.consts";
 
+import { LandingThemeSwitch } from "./LandingThemeSwitch";
+
 const sections = [
   { href: "#features", label: "Features" },
   { href: "#screens", label: "Screens" },
@@ -26,7 +28,7 @@ function LandingHeader() {
             src={`${import.meta.env.BASE_URL}logo-symbol.svg`}
             width={28}
           />
-          EasyTrim Editor
+          <span className="max-sm:sr-only">EasyTrim Editor</span>
         </a>
 
         <nav aria-label="Sections" className="hidden md:block">
@@ -45,6 +47,7 @@ function LandingHeader() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
+          <LandingThemeSwitch />
           <Button asChild size="icon-lg" variant="ghost">
             <a aria-label="View EasyTrim Editor on GitHub" href={REPOSITORY_URL}>
               <GithubIcon />

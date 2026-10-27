@@ -20,7 +20,7 @@ function LandingScreenshot({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-xl border bg-card p-1 shadow-2xl shadow-black/50 sm:p-1.5",
+        "overflow-hidden rounded-xl border bg-card p-1 shadow-2xl shadow-black/15 sm:p-1.5 dark:shadow-black/50",
         className,
       )}
     >

@@ -24,7 +24,7 @@ function LandingHero() {
           id="hero-title"
         >
           Trim video precisely.{" "}
-          <span className="bg-linear-to-r from-primary to-amber-200 bg-clip-text text-transparent">
+          <span className="bg-linear-to-r from-primary to-amber-500 bg-clip-text text-transparent dark:to-amber-200">
             Skip the project files.
           </span>
         </h1>
