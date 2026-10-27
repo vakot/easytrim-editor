@@ -3,11 +3,12 @@ import { Keyboard } from "lucide-react";
 import React, { type ReactNode, Suspense, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@easytrim-editor/ui/badge";
+import { Separator } from "@easytrim-editor/ui/separator";
+
 import type { DialogScope } from "@/components/ui/dialog";
 import { DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
-import { Separator } from "@/components/ui/separator";
 
 import { SETTINGS_SHORTCUT } from "@/app/commands/core/application-command.shortcuts";
 import { getShortcutDisplayKeys } from "@/app/commands/core/application-command.utils";

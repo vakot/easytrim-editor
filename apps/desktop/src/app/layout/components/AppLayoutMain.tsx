@@ -2,6 +2,7 @@ import { Suspense } from "react";
 
 import { cn } from "@easytrim-editor/ui/class-names";
 import { ScrollArea } from "@easytrim-editor/ui/scroll-area";
+import { Separator } from "@easytrim-editor/ui/separator";
 
 import {
   ResizableHandle,
@@ -9,7 +10,6 @@ import {
   ResizablePanelGroup,
   usePanelCommand,
 } from "@/components/ui/resizable";
-import { Separator } from "@/components/ui/separator";
 
 import { useApplicationCommand } from "@/app/hooks/useApplicationCommands";
 import { AppLayoutPanel } from "@/app/layout/components/AppLayoutPanel";

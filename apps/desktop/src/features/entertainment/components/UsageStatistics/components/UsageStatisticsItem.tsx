@@ -2,8 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { cn } from "@easytrim-editor/ui/class-names";
-
-import { Item, ItemContent, ItemDescription, ItemMedia, ItemTitle } from "@/components/ui/item";
+import { Item, ItemContent, ItemDescription, ItemMedia, ItemTitle } from "@easytrim-editor/ui/item";
 
 function UsageStatisticsItem({
   description,

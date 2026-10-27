@@ -1,10 +1,10 @@
 import { CircleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { Badge } from "@easytrim-editor/ui/badge";
 import { cn } from "@easytrim-editor/ui/class-names";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 
 import { localizeAppError } from "@/i18n/app-errors";

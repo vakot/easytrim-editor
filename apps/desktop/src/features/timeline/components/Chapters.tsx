@@ -4,10 +4,16 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@easytrim-editor/ui/button";
 import { cn } from "@easytrim-editor/ui/class-names";
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemTitle,
+} from "@easytrim-editor/ui/item";
 import { ScrollArea } from "@easytrim-editor/ui/scroll-area";
 
 import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
-import { Item, ItemActions, ItemContent, ItemDescription, ItemTitle } from "@/components/ui/item";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { chapterDeleted, selectChapters } from "@/app/store/slices/chapters-slice";

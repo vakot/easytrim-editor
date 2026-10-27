@@ -4,9 +4,9 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@easytrim-editor/ui/button";
 import { cn } from "@easytrim-editor/ui/class-names";
+import { Progress } from "@easytrim-editor/ui/progress";
+import { Separator } from "@easytrim-editor/ui/separator";
 
-import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
 
 import { SupportLink } from "@/app/components/SupportLink";

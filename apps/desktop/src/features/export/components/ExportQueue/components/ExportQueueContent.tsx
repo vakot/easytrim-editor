@@ -5,6 +5,7 @@ import { Button } from "@easytrim-editor/ui/button";
 import { Card } from "@easytrim-editor/ui/card";
 import { cn } from "@easytrim-editor/ui/class-names";
 import { ScrollArea } from "@easytrim-editor/ui/scroll-area";
+import { Separator } from "@easytrim-editor/ui/separator";
 
 import {
   DropdownMenu,
@@ -13,7 +14,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Separator } from "@/components/ui/separator";
 
 import {
   ExportQueueItem,

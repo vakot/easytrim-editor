@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 
-import { Progress } from "@/components/ui/progress";
+import { Progress } from "@easytrim-editor/ui/progress";
 
 import type { AchievementMetricUnit } from "../../../lib/achievements.utils";
 import { formatAchievementValue } from "../lib/achievements-format.utils";

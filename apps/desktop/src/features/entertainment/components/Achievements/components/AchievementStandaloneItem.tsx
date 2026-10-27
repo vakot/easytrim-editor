@@ -2,11 +2,10 @@ import { Check, Lock, LockKeyhole } from "lucide-react";
 import type { CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Badge } from "@easytrim-editor/ui/badge";
 import { cn } from "@easytrim-editor/ui/class-names";
 import { formatDateOnly } from "@easytrim-editor/ui/date-time";
-
-import { Badge } from "@/components/ui/badge";
-import { Item, ItemContent, ItemDescription, ItemMedia, ItemTitle } from "@/components/ui/item";
+import { Item, ItemContent, ItemDescription, ItemMedia, ItemTitle } from "@easytrim-editor/ui/item";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectAchievementRecords } from "@/app/store/slices/achievements-slice";

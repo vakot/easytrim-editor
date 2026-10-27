@@ -1,8 +1,7 @@
 import { type ReactNode, useId } from "react";
 
 import { cn } from "@easytrim-editor/ui/class-names";
-
-import { ItemGroup } from "@/components/ui/item";
+import { ItemGroup } from "@easytrim-editor/ui/item";
 
 function AchievementsCategory({
   children,
