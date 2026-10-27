@@ -12,7 +12,7 @@ import {
   applyTheme,
   type PrimaryColor,
   resolveTheme,
-  subscribeToSystemTheme,
+  subscribeToSystemThemeTransition,
   systemPrefersDark,
 } from "@easytrim-editor/ui/theme";
 
@@ -24,7 +24,12 @@ import { ThemeContext } from "./theme-context";
 function ThemeProvider({ children }: { children: ReactNode }) {
   const preference = useAppSelector(selectThemePreference);
   const primaryColor = useAppSelector(selectPrimaryColor);
-  const systemDark = useSyncExternalStore(subscribeToSystemTheme, systemPrefersDark, () => false);
+  const systemDark = useSyncExternalStore(
+    subscribeToSystemThemeTransition,
+    systemPrefersDark,
+    () => false,
+  );
+
   const resolvedTheme = resolveTheme(preference, systemDark);
   const previewedColor = useRef<PrimaryColor | null>(null);
   const previousPrimaryColor = useRef(primaryColor);

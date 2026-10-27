@@ -1,48 +1,17 @@
 import { useLayoutEffect, useState, useSyncExternalStore } from "react";
-import { flushSync } from "react-dom";
 
 import {
   applyTheme,
   isThemePreference,
   resolveTheme,
-  subscribeToSystemTheme,
+  subscribeToSystemThemeTransition,
   systemPrefersDark,
   type ThemePreference,
+  transitionTheme,
 } from "@easytrim-editor/ui/theme";
 
 /** Shared with the pre-paint script in `index.html`, which applies a saved choice before React. */
 const THEME_STORAGE_KEY = "easytrim-landing-theme";
-
-function prefersReducedMotion(): boolean {
-  return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
-}
-
-/**
- * Runs a theme change inside a view transition, so the page crossfades to the new colors in the
- * 300ms set in `globals.css` instead of each element following its own transition. The update is
- * flushed synchronously so the new theme is applied before the browser captures the new view.
- * Without view transitions, or with reduced motion, the theme switches at once.
- *
- * `data-theme-switching` pauses element transitions for the switch, so the new view, or the page
- * itself without a view transition, shows the final colors at once.
- */
-function transitionTheme(update: () => void) {
-  const root = document.documentElement;
-  root.dataset.themeSwitching = "";
-  const done = () => delete root.dataset.themeSwitching;
-
-  if (typeof document.startViewTransition !== "function" || prefersReducedMotion()) {
-    update();
-    // Keep transitions paused until the new colors have been styled once.
-    requestAnimationFrame(() => requestAnimationFrame(done));
-    return;
-  }
-  document.startViewTransition(() => flushSync(update)).finished.finally(done);
-}
-
-function subscribeToSystemThemeTransition(onChange: () => void): () => void {
-  return subscribeToSystemTheme(() => transitionTheme(onChange));
-}
 
 function readStoredTheme(): ThemePreference {
   try {
@@ -63,7 +32,7 @@ function storeTheme(preference: ThemePreference) {
 }
 
 /**
- * The visitor's System, Light, or Dark choice, applied to the page exactly as the application
+ * The visitor's System, Light, or Dark choice, applied and crossfaded exactly as the application
  * applies its own, and remembered on this device.
  */
 function useLandingTheme() {

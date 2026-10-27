@@ -87,7 +87,8 @@ own Vite and Tailwind build, so it has no build step or `dist` output.
   `Card`, `Item`, `Progress`, `ScrollArea`, `Separator`, and `Tooltip`; effects such as `Confetti`
   and `TextReveal`; brand icons; the `Timestamp` primitive with its date-time formatting; the `cn`
   class-name helper; the color math and the theme utilities (light, dark, or system resolution,
-  the primary color presets and palette, and applying both to the document root); the stateless
+  the primary color presets and palette, applying both to the document root, and the single 300ms
+  crossfade both applications use for a theme change); the stateless
   achievement presentation (`AchievementCard`,
   `AchievementUnlockToast`, tier styles, and Galactic Glyphs) that the website showcases; and the
   semantic design tokens, including the achievement tier and secret palettes, and base styles. It never imports desktop code, Tauri, Redux, i18n, or

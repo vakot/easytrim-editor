@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   applyPrimaryColor,
@@ -7,6 +7,7 @@ import {
   PRIMARY_COLOR_PRESETS,
   primaryColorPalette,
   resolveTheme,
+  transitionTheme,
 } from "../theme.utils";
 
 describe("resolveTheme", () => {
@@ -65,5 +66,69 @@ describe("applyPrimaryColor", () => {
     expect(root.style.getPropertyValue("--primary-foreground-light")).toBe(palette.lightForeground);
     expect(root.style.getPropertyValue("--primary-dark")).toBe(palette.dark);
     expect(root.style.getPropertyValue("--primary-foreground-dark")).toBe(palette.darkForeground);
+  });
+});
+
+describe("transitionTheme", () => {
+  const root = document.documentElement;
+
+  function preferReducedMotion(reduce: boolean) {
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn((query: string) => ({ matches: reduce && query.includes("reduce"), media: query })),
+    );
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    Reflect.deleteProperty(document, "startViewTransition");
+    delete root.dataset.themeSwitching;
+  });
+
+  it("applies the change inside a view transition with element transitions paused", async () => {
+    preferReducedMotion(false);
+    let pausedDuringUpdate = false;
+    let finish = () => {};
+    const startViewTransition = vi.fn((update: () => void) => {
+      update();
+      return { finished: new Promise<void>((resolve) => (finish = resolve)) };
+    });
+
+    Object.defineProperty(document, "startViewTransition", {
+      configurable: true,
+      value: startViewTransition,
+    });
+
+    transitionTheme(() => {
+      pausedDuringUpdate = "themeSwitching" in root.dataset;
+    });
+
+    expect(startViewTransition).toHaveBeenCalledTimes(1);
+    expect(pausedDuringUpdate).toBe(true);
+
+    finish();
+    await vi.waitFor(() => expect("themeSwitching" in root.dataset).toBe(false));
+  });
+
+  it.each([
+    ["without view transitions", false, false],
+    ["with reduced motion", true, true],
+  ])("switches at once %s", async (_, supported, reduce) => {
+    preferReducedMotion(reduce);
+    const startViewTransition = vi.fn();
+    if (supported) {
+      Object.defineProperty(document, "startViewTransition", {
+        configurable: true,
+        value: startViewTransition,
+      });
+    }
+    const update = vi.fn();
+
+    transitionTheme(update);
+
+    expect(update).toHaveBeenCalledTimes(1);
+    expect(startViewTransition).not.toHaveBeenCalled();
+    expect("themeSwitching" in root.dataset).toBe(true);
+    await vi.waitFor(() => expect("themeSwitching" in root.dataset).toBe(false));
   });
 });

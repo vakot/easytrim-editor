@@ -1,7 +1,10 @@
+import { flushSync } from "react-dom";
+
 import type { HexColor } from "./color.types";
 import { hexToHsl, hslToHex } from "./color.utils";
 
 const SYSTEM_THEME_QUERY = "(prefers-color-scheme: dark)";
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 export type ThemePreference = "system" | "light" | "dark";
 export type ResolvedTheme = Exclude<ThemePreference, "system">;
 
@@ -53,6 +56,38 @@ function subscribeToSystemTheme(onChange: () => void): () => void {
   return () => mediaQuery.removeEventListener("change", onChange);
 }
 
+function prefersReducedMotion(): boolean {
+  return typeof window.matchMedia === "function" && window.matchMedia(REDUCED_MOTION_QUERY).matches;
+}
+
+/**
+ * Runs a theme change as one 300ms crossfade of the whole page, defined with the view transition
+ * rules in `globals.css`, instead of each element following its own transition. The update is
+ * flushed synchronously so the new theme is applied before the browser captures the new view.
+ * Without view transitions, or with reduced motion, the theme switches at once.
+ *
+ * `data-theme-switching` pauses element transitions for the switch, so the new view, or the page
+ * itself without a view transition, shows the final colors at once.
+ */
+function transitionTheme(update: () => void) {
+  const root = document.documentElement;
+  root.dataset.themeSwitching = "";
+  const done = () => delete root.dataset.themeSwitching;
+
+  if (typeof document.startViewTransition !== "function" || prefersReducedMotion()) {
+    update();
+    // Keep transitions paused until the new colors have been styled once.
+    requestAnimationFrame(() => requestAnimationFrame(done));
+    return;
+  }
+  document.startViewTransition(() => flushSync(update)).finished.finally(done);
+}
+
+/** `subscribeToSystemTheme` for a store whose change should crossfade like any theme change. */
+function subscribeToSystemThemeTransition(onChange: () => void): () => void {
+  return subscribeToSystemTheme(() => transitionTheme(onChange));
+}
+
 /**
  * Applies a theme to the document root the way the token stylesheet expects: `.dark` whenever the
  * resolved theme is dark, and `.light` only for an explicit light choice, so a system light theme
@@ -81,5 +116,7 @@ export {
   primaryColorPalette,
   resolveTheme,
   subscribeToSystemTheme,
+  subscribeToSystemThemeTransition,
   systemPrefersDark,
+  transitionTheme,
 };

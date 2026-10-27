@@ -1,6 +1,8 @@
 import { Monitor, Moon, Sun } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { resolveTheme, systemPrefersDark, transitionTheme } from "@easytrim-editor/ui/theme";
+
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
   selectThemePreference,
@@ -35,7 +37,11 @@ function useThemeCommands() {
         <Moon aria-hidden="true" />
       ),
     run() {
-      dispatch(themePreferenceChanged(theme));
+      const systemDark = systemPrefersDark();
+      const change = () => dispatch(themePreferenceChanged(theme));
+      // Crossfade only when the colors change; a choice that resolves the same applies at once.
+      if (resolveTheme(theme, systemDark) === resolveTheme(currentTheme, systemDark)) change();
+      else transitionTheme(change);
     },
     id: getThemeCommandId(theme),
     label: labels[theme],
