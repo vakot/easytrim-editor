@@ -1,5 +1,5 @@
 import { LandingAchievements } from "./components/LandingAchievements";
-import { LandingDownload } from "./components/LandingDownload";
+import { LandingDownloads } from "./components/LandingDownloads";
 import { LandingFeatures } from "./components/LandingFeatures";
 import { LandingFooter } from "./components/LandingFooter";
 import { LandingHeader } from "./components/LandingHeader";
@@ -21,7 +21,7 @@ function Landing() {
         <LandingFeatures />
         <LandingShowcase />
         <LandingAchievements />
-        <LandingDownload />
+        <LandingDownloads />
       </main>
       <LandingFooter />
     </>

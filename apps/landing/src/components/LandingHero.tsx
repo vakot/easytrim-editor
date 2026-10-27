@@ -3,7 +3,7 @@ import { Download } from "lucide-react";
 import { GithubIcon } from "@easytrim-editor/ui/brand-icons";
 import { Button } from "@easytrim-editor/ui/button";
 
-import { DOWNLOAD_URL, REPOSITORY_URL } from "../consts/links.consts";
+import { REPOSITORY_URL } from "../consts/links.consts";
 import { editorScreenshot } from "../consts/screenshots.consts";
 
 import { LandingScreenshot } from "./LandingScreenshot";
@@ -36,7 +36,7 @@ function LandingHero() {
 
         <div className="mt-8 flex flex-col items-center gap-3 motion-safe:animate-in motion-safe:delay-200 motion-safe:animation-duration-700 motion-safe:fill-mode-both motion-safe:fade-in sm:flex-row">
           <Button asChild className="h-11 gap-2 px-5 text-base" size="lg">
-            <a href={DOWNLOAD_URL}>
+            <a href="#downloads">
               <Download aria-hidden="true" className="size-5" />
               Download EasyTrim
             </a>
