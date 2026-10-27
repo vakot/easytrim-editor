@@ -48,8 +48,7 @@ function LandingHeader() {
 
         <div className="ml-auto flex items-center gap-2">
           <LandingThemeSwitch />
-          {/* Phones keep the header to the essentials; the footer always offers Ko-fi. */}
-          <Button asChild className="max-sm:hidden" size="icon-lg" variant="ghost">
+          <Button asChild size="icon-lg" variant="ghost">
             <a
               aria-label="Support EasyTrim Editor on Ko-fi"
               href={KOFI_URL}
@@ -63,10 +62,11 @@ function LandingHeader() {
               <GithubIcon />
             </a>
           </Button>
-          <Button asChild size="lg">
-            <a href={DOWNLOAD_URL}>
+          {/* Icon only on phones, where the header is narrow; the label stays for screen readers. */}
+          <Button asChild className="max-sm:w-9 max-sm:px-0" size="lg">
+            <a href={DOWNLOAD_URL} title="Download">
               <Download aria-hidden="true" />
-              Download
+              <span className="max-sm:sr-only">Download</span>
             </a>
           </Button>
         </div>
