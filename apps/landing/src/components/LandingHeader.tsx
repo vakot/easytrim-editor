@@ -1,9 +1,9 @@
 import { Download } from "lucide-react";
 
-import { GithubIcon } from "@easytrim-editor/ui/brand-icons";
+import { GithubIcon, KofiIcon } from "@easytrim-editor/ui/brand-icons";
 import { Button } from "@easytrim-editor/ui/button";
 
-import { DOWNLOAD_URL, REPOSITORY_URL } from "../consts/links.consts";
+import { DOWNLOAD_URL, KOFI_URL, REPOSITORY_URL } from "../consts/links.consts";
 
 import { LandingThemeSwitch } from "./LandingThemeSwitch";
 
@@ -49,14 +49,24 @@ function LandingHeader() {
         <div className="ml-auto flex items-center gap-2">
           <LandingThemeSwitch />
           <Button asChild size="icon-lg" variant="ghost">
+            <a
+              aria-label="Support EasyTrim Editor on Ko-fi"
+              href={KOFI_URL}
+              title="Support on Ko-fi"
+            >
+              <KofiIcon className="text-primary" />
+            </a>
+          </Button>
+          <Button asChild size="icon-lg" variant="ghost">
             <a aria-label="View EasyTrim Editor on GitHub" href={REPOSITORY_URL}>
               <GithubIcon />
             </a>
           </Button>
-          <Button asChild size="lg">
-            <a href={DOWNLOAD_URL}>
+          {/* Icon only on phones, where the header is narrow; the label stays for screen readers. */}
+          <Button asChild className="max-sm:w-9 max-sm:px-0" size="lg">
+            <a href={DOWNLOAD_URL} title="Download">
               <Download aria-hidden="true" />
-              Download
+              <span className="max-sm:sr-only">Download</span>
             </a>
           </Button>
         </div>

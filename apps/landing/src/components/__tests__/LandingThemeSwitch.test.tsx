@@ -127,4 +127,49 @@ describe("LandingThemeSwitch", () => {
       expect(root).toHaveClass("light");
     });
   });
+
+  describe("compact switch on small screens", () => {
+    const toggle = () => screen.getByRole("button", { name: /^Theme:/ });
+    const group = () => screen.getByRole("group", { name: "Theme" });
+
+    it("shows only the current theme until it is expanded", () => {
+      render(<LandingThemeSwitch />);
+
+      expect(toggle()).toHaveAccessibleName("Theme: System");
+      expect(toggle()).toHaveAttribute("aria-expanded", "false");
+      expect(group()).toHaveClass("hidden", "sm:flex");
+
+      fireEvent.click(toggle());
+
+      expect(toggle()).toHaveAttribute("aria-expanded", "true");
+      expect(group()).toHaveClass("flex");
+      expect(screen.getByRole("radio", { name: "System" })).toHaveFocus();
+    });
+
+    it("collapses to the new theme once one is chosen with a pointer", () => {
+      render(<LandingThemeSwitch />);
+      fireEvent.click(toggle());
+
+      const light = screen.getByRole("radio", { name: "Light" }).closest("label")!;
+      // Pressing keeps focus in the switch, so blur cannot collapse it before the click lands.
+      expect(fireEvent.mouseDown(light)).toBe(false);
+      fireEvent.click(light, { detail: 1 });
+
+      expect(group()).toHaveClass("hidden");
+      expect(toggle()).toHaveAccessibleName("Theme: Light");
+      expect(root).toHaveClass("light");
+    });
+
+    it("stays open while browsing with the keyboard and closes on Escape", () => {
+      render(<LandingThemeSwitch />);
+      fireEvent.click(toggle());
+
+      fireEvent.click(screen.getByRole("radio", { name: "Dark" }));
+      expect(group()).toHaveClass("flex");
+
+      fireEvent.keyDown(screen.getByRole("radio", { name: "Dark" }), { key: "Escape" });
+      expect(group()).toHaveClass("hidden");
+      expect(toggle()).toHaveAttribute("aria-expanded", "false");
+    });
+  });
 });
