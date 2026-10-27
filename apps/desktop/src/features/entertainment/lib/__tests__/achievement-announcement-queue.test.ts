@@ -2,15 +2,16 @@ import { Trophy } from "lucide-react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
-  achievementToastPresentation,
-  ANNOUNCEMENT_GAP_MS,
+  type AchievementToastVariant,
   secretRevealEnd,
   secretRevealTimeline,
+} from "@easytrim-editor/ui/achievement-unlock-toast";
+
+import {
+  achievementToastPresentation,
+  ANNOUNCEMENT_GAP_MS,
 } from "../../consts/achievement-toast.consts";
-import type {
-  AchievementAnnouncement,
-  AchievementToastVariant,
-} from "../../types/achievement-toast.types";
+import type { AchievementAnnouncement } from "../../types/achievement-toast.types";
 import {
   type AchievementCelebrationSettings,
   type AchievementPresentation,

@@ -201,6 +201,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      lucide-react:
+        specifier: ^1.28.0
+        version: 1.28.0(react@19.2.8)
       motion:
         specifier: ^13.4.2
         version: 13.4.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -241,9 +244,6 @@ importers:
       jsdom:
         specifier: 30.0.1
         version: 30.0.1
-      lucide-react:
-        specifier: ^1.28.0
-        version: 1.28.0(react@19.2.8)
       react:
         specifier: 19.2.8
         version: 19.2.8

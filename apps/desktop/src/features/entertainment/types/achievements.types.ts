@@ -1,6 +1,8 @@
 import type { TFunction } from "i18next";
 import type { LucideIcon } from "lucide-react";
 
+import type { AchievementTier } from "@easytrim-editor/ui/achievement-tier-styles";
+
 type AchievementCategory =
   "export-milestones" | "getting-started" | "processing-milestones" | "secret-discoveries";
 
@@ -13,8 +15,6 @@ type AchievementMetric =
   | "processingMillis"
   | "sourceBytes"
   | "storageSavedBytes";
-
-type AchievementTier = "bronze" | "gold" | "silver";
 
 /**
  * What unlocks an achievement. Conditions are declarative and only ever read data that persists, so
@@ -98,7 +98,6 @@ export type {
   AchievementCondition,
   AchievementMetric,
   AchievementSeriesDefinition,
-  AchievementTier,
   StandaloneAchievementDefinition,
   UnlockableAchievement,
 };

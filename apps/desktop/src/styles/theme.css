@@ -12,23 +12,12 @@
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
-  --color-achievement-bronze: var(--achievement-bronze);
-  --color-achievement-silver: var(--achievement-silver);
-  --color-achievement-gold: var(--achievement-gold);
   --color-preview-surface: var(--preview-surface);
 }
 
 :root,
 .light {
   --slider-original-marker: #d5d2cb;
-  --achievement-bronze: #9c5b26;
-  --achievement-silver: #66707c;
-  --achievement-gold: #9a7400;
-  --achievement-secret-violet: #7048d8;
-  --achievement-secret-azure: #1f7fc4;
-  --achievement-secret-mint: #12875f;
-  --achievement-secret-amber: #b87908;
-  --achievement-secret-rose: #c53a73;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -50,14 +39,6 @@
 
 .dark {
   --slider-original-marker: #8b8b94;
-  --achievement-bronze: #d9975c;
-  --achievement-silver: #c3cad3;
-  --achievement-gold: #ebc24a;
-  --achievement-secret-violet: #a78bfa;
-  --achievement-secret-azure: #5ab8f5;
-  --achievement-secret-mint: #5fd9b0;
-  --achievement-secret-amber: #f0c25a;
-  --achievement-secret-rose: #f472a8;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -80,14 +61,6 @@
 @media (prefers-color-scheme: dark) {
   :root:not(.light):not(.dark) {
     --slider-original-marker: #8b8b94;
-    --achievement-bronze: #d9975c;
-    --achievement-silver: #c3cad3;
-    --achievement-gold: #ebc24a;
-    --achievement-secret-violet: #a78bfa;
-    --achievement-secret-azure: #5ab8f5;
-    --achievement-secret-mint: #5fd9b0;
-    --achievement-secret-amber: #f0c25a;
-    --achievement-secret-rose: #f472a8;
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
     --chart-3: oklch(0.439 0 0);

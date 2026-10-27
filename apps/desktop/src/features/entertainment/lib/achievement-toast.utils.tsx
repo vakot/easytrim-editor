@@ -1,6 +1,7 @@
 import { toast } from "sonner";
 
-import { AchievementUnlockToast } from "../components/AchievementUnlockToast";
+import { AchievementUnlockToast } from "@easytrim-editor/ui/achievement-unlock-toast";
+
 import { ACHIEVEMENT_TOASTER_ID } from "../consts/achievement-toast.consts";
 import type { AchievementAnnouncement } from "../types/achievement-toast.types";
 
