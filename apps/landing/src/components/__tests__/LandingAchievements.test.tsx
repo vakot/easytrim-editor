@@ -7,33 +7,20 @@ import {
 } from "../../consts/onboarding-achievements.consts";
 import { LandingAchievements } from "../LandingAchievements";
 
-const { completionMs, startMs, unlockMs } = onboardingLoopTiming;
+const { exitMs, toastMs } = onboardingLoopTiming;
 
-function cards() {
-  return [...document.querySelectorAll<HTMLElement>("[data-slot='item']")];
+function slot(name: "current-toast" | "leaving-toast") {
+  return document.querySelector<HTMLElement>(`[data-slot='${name}']`);
 }
 
-function unlockedCount() {
-  return cards().filter((card) => card.dataset.state === "unlocked").length;
-}
-
-function toastTitle() {
-  return document.querySelector("[data-slot='achievement-unlock-title']")?.textContent ?? null;
-}
-
-function completion() {
-  return document.querySelector("[data-slot='onboarding-completion']");
+function title(element: HTMLElement | null) {
+  return element?.querySelector("[data-slot='achievement-unlock-title']")?.textContent ?? null;
 }
 
 function advance(ms: number) {
   act(() => {
     vi.advanceTimersByTime(ms);
   });
-}
-
-/** Each step's timer is scheduled after the previous step renders, so advance one at a time. */
-function advanceSteps(...durations: number[]) {
-  for (const ms of durations) advance(ms);
 }
 
 function preferReducedMotion(reduce: boolean) {
@@ -61,66 +48,69 @@ describe("LandingAchievements", () => {
     vi.unstubAllGlobals();
   });
 
-  it("starts with every Getting Started achievement locked", () => {
+  it("shows only the toast, starting with the first Getting Started achievement", () => {
     render(<LandingAchievements />);
 
-    expect(cards()).toHaveLength(onboardingAchievements.length);
-    expect(unlockedCount()).toBe(0);
-    expect(toastTitle()).toBeNull();
-    expect(screen.getByText(`0 of ${onboardingAchievements.length}`)).toBeInTheDocument();
+    expect(title(slot("current-toast"))).toBe(onboardingAchievements[0]!.title);
+    expect(document.querySelector("[data-slot='item']")).toBeNull();
+    expect(screen.queryByText("Getting Started")).not.toBeInTheDocument();
   });
 
-  it("unlocks the achievements in order, each with its own toast", () => {
+  it("hands over to the next toast while the previous one fades out", () => {
     render(<LandingAchievements />);
+    const first = slot("current-toast");
 
-    advance(startMs);
-    expect(unlockedCount()).toBe(1);
-    expect(toastTitle()).toBe(onboardingAchievements[0]!.title);
-    expect(screen.getByText("Completed")).toBeInTheDocument();
+    advance(toastMs);
 
-    advance(unlockMs);
-    expect(unlockedCount()).toBe(2);
-    expect(toastTitle()).toBe(onboardingAchievements[1]!.title);
+    expect(title(slot("current-toast"))).toBe(onboardingAchievements[1]!.title);
+    expect(slot("leaving-toast")).toBe(first);
+    expect(slot("leaving-toast")).toHaveAttribute("aria-hidden", "true");
+    expect(slot("leaving-toast")).toHaveClass("animate-out", "fade-out");
+
+    advance(exitMs);
+    expect(slot("leaving-toast")).toBeNull();
   });
 
-  it("celebrates completion and then starts over", () => {
+  it("starts over after the last achievement", () => {
     render(<LandingAchievements />);
 
-    advanceSteps(startMs, ...onboardingAchievements.map(() => unlockMs));
-    expect(unlockedCount()).toBe(onboardingAchievements.length);
-    expect(completion()).not.toBeNull();
-    expect(toastTitle()).toBeNull();
+    onboardingAchievements.forEach(() => advance(toastMs));
 
-    advance(completionMs);
-    expect(completion()).toBeNull();
-    expect(unlockedCount()).toBe(0);
-
-    advance(startMs);
-    expect(toastTitle()).toBe(onboardingAchievements[0]!.title);
+    expect(title(slot("current-toast"))).toBe(onboardingAchievements[0]!.title);
+    expect(title(slot("leaving-toast"))).toBe(onboardingAchievements.at(-1)!.title);
   });
 
   it("stops advancing while paused and resumes when played", () => {
     render(<LandingAchievements />);
 
-    advance(startMs);
     fireEvent.click(screen.getByRole("button", { name: "Pause the preview" }));
-    advanceSteps(unlockMs, unlockMs, unlockMs);
-    expect(unlockedCount()).toBe(1);
+    advance(toastMs * 3);
+    expect(title(slot("current-toast"))).toBe(onboardingAchievements[0]!.title);
 
     fireEvent.click(screen.getByRole("button", { name: "Play the preview" }));
-    advance(unlockMs);
-    expect(unlockedCount()).toBe(2);
+    advance(toastMs);
+    expect(title(slot("current-toast"))).toBe(onboardingAchievements[1]!.title);
   });
 
-  it("shows a still frame for visitors who prefer reduced motion", () => {
+  it("shows a still toast for visitors who prefer reduced motion", () => {
     preferReducedMotion(true);
     render(<LandingAchievements />);
 
     expect(screen.getByRole("button", { name: "Play the preview" })).toBeInTheDocument();
-    expect(unlockedCount()).toBe(2);
-    expect(toastTitle()).toBe(onboardingAchievements[1]!.title);
+    expect(title(slot("current-toast"))).toBe(onboardingAchievements[0]!.title);
 
-    advanceSteps(unlockMs, unlockMs, unlockMs);
-    expect(unlockedCount()).toBe(2);
+    advance(toastMs * 3);
+    expect(title(slot("current-toast"))).toBe(onboardingAchievements[0]!.title);
+  });
+
+  it("swaps toasts without an exit animation once a reduced-motion visitor plays", () => {
+    preferReducedMotion(true);
+    render(<LandingAchievements />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Play the preview" }));
+    advance(toastMs);
+
+    expect(title(slot("current-toast"))).toBe(onboardingAchievements[1]!.title);
+    expect(slot("leaving-toast")).toBeNull();
   });
 });

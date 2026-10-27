@@ -71,13 +71,12 @@ const onboardingAchievements: readonly OnboardingAchievement[] = [
 ];
 
 /**
- * How long each step of the onboarding loop stays on screen, in milliseconds: the fresh collection,
- * every unlock, and the completion celebration before the loop starts over.
+ * The toast loop's pace, in milliseconds: how long each toast leads before the next one arrives,
+ * and how long the previous one takes to fade out beneath it.
  */
 const onboardingLoopTiming = {
-  completionMs: 3_200,
-  startMs: 1_200,
-  unlockMs: 2_400,
+  exitMs: 400,
+  toastMs: 3_000,
 } as const;
 
 export { onboardingAchievements, onboardingLoopTiming };
