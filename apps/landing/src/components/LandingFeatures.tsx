@@ -28,7 +28,7 @@ const features: readonly Feature[] = [
   {
     className: "lg:col-span-2",
     description:
-      "Crop the frame to a new size, then move, resize, and loop the selected segment until it is exactly right.",
+      "Crop the frame to a new size, then move and resize the selected segment until it is exactly right.",
     icon: Crop,
     title: "Crop and segment editing",
   },
@@ -49,7 +49,7 @@ const features: readonly Feature[] = [
   {
     className: "lg:col-span-2",
     description:
-      "Line up as many export jobs as you need. They run one at a time while you keep working on the next clip or making some coffee.",
+      "Line up as many export jobs as you need. They run one at a time while you keep working on the next clip or grab a coffee.",
     icon: ListOrdered,
     title: "Export Queue",
   },
