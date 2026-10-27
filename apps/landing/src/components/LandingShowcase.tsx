@@ -7,7 +7,7 @@ import { LandingScreenshot } from "./LandingScreenshot";
 const sourcePoints = [
   "Find any source with search",
   "See each video's details at a glance",
-  "Delete sources right from the editor",
+  "Clean up leftover originals after export",
 ] as const;
 
 function LandingShowcase() {
