@@ -2,7 +2,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { extname, relative, resolve, sep } from "node:path";
 
 const sourceRoot = resolve("apps/desktop/src");
-const sourceRoots = [sourceRoot, resolve("packages/ui/src")];
+const sourceRoots = [sourceRoot, resolve("apps/landing/src"), resolve("packages/ui/src")];
 const sourceExtensions = new Set([".css", ".scss", ".ts", ".tsx", ".html", ".svg"]);
 const violations = [];
 
