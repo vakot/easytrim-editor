@@ -171,4 +171,61 @@ describe("LandingDownloads", () => {
       await screen.findByRole("link", { name: "Open the latest release" }),
     ).toBeInTheDocument();
   });
+
+  describe("macOS first launch", () => {
+    const command = 'xattr -dr com.apple.quarantine "/Applications/EasyTrim Editor.app"';
+
+    it("explains how to open the unsigned app, with the terminal command", async () => {
+      stubVisitor("macos");
+      stubGithub({ release: allPlatformsRelease });
+      render(<LandingDownloads />);
+
+      await screen.findByRole("link", { name: "Download for macOS" });
+      expect(
+        screen.getByText("The steps are under macOS below.", { exact: false }),
+      ).toBeInTheDocument();
+
+      const help = within(platformCard("macOS")).getByText("Can’t open it on macOS?");
+      expect(help.closest("details")).not.toHaveAttribute("open");
+      expect(within(platformCard("macOS")).getByText(/Open Anyway/)).toBeInTheDocument();
+      expect(within(platformCard("macOS")).getByText(command)).toBeInTheDocument();
+    });
+
+    it("copies the command", async () => {
+      const writeText = vi.fn(() => Promise.resolve());
+      Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
+      stubVisitor("macos");
+      stubGithub({ release: allPlatformsRelease });
+      render(<LandingDownloads />);
+
+      fireEvent.click(await screen.findByRole("button", { name: "Copy the command" }));
+
+      expect(writeText).toHaveBeenCalledWith(command);
+      expect(await screen.findByText("Copied")).toBeInTheDocument();
+      Reflect.deleteProperty(navigator, "clipboard");
+    });
+
+    it("stays quiet when there is no macOS installer to help with", async () => {
+      stubVisitor("macos");
+      stubGithub();
+      render(<LandingDownloads />);
+
+      await screen.findByText("v1.15.0 has no macOS installer yet.", { exact: false });
+
+      expect(screen.queryByText("Can’t open it on macOS?")).not.toBeInTheDocument();
+      expect(screen.queryByText(/The steps are under macOS below/)).not.toBeInTheDocument();
+    });
+
+    it("is not shown to Windows visitors", async () => {
+      stubVisitor("windows");
+      stubGithub({ release: allPlatformsRelease });
+      render(<LandingDownloads />);
+
+      await screen.findByRole("link", { name: "Download for Windows" });
+
+      expect(screen.queryByText(/The steps are under macOS below/)).not.toBeInTheDocument();
+      // The macOS card still carries the help for anyone who picks its installer there.
+      expect(within(platformCard("macOS")).getByText(command)).toBeInTheDocument();
+    });
+  });
 });

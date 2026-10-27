@@ -22,6 +22,8 @@ import {
 } from "../lib/platform.utils";
 import { reveal } from "../lib/reveal.utils";
 
+import { LandingMacosHelp } from "./LandingMacosHelp";
+
 const platformIcons: Record<DesktopPlatform, ComponentType<SVGProps<SVGSVGElement>>> = {
   linux: LinuxIcon,
   macos: AppleIcon,
@@ -241,6 +243,11 @@ function Recommendation({
           shows which one you have.
         </p>
       )}
+      {platform === "macos" && (
+        <p className="max-w-sm text-xs text-muted-foreground">
+          macOS asks you to confirm the first launch. The steps are under macOS below.
+        </p>
+      )}
     </>
   );
 }
@@ -260,7 +267,10 @@ function PlatformInstallers({
       : [];
 
   return (
-    <li className={cn("rounded-xl border bg-card p-5", detected && "amber-edge")} {...reveal}>
+    <li
+      className={cn("min-w-0 rounded-xl border bg-card p-5", detected && "amber-edge")}
+      {...reveal}
+    >
       <div className="flex items-center gap-3">
         <Icon className="size-5" />
         <h3 className="font-semibold">{name}</h3>
@@ -303,6 +313,7 @@ function PlatformInstallers({
       ) : (
         <p className="mt-4 text-sm text-muted-foreground">No installer in this release yet.</p>
       )}
+      {platform === "macos" && installers.length > 0 && <LandingMacosHelp />}
     </li>
   );
 }
