@@ -24,8 +24,9 @@ pnpm --filter @easytrim-editor/landing test
 ```
 
 The site may import only `@easytrim-editor/ui` subpaths, never desktop code, Tauri, Redux, or
-i18n; ESLint enforces this. Copy lives in the components, and the achievements shown in the
-showcase are in `src/consts/showcase-achievements.consts.ts`.
+i18n; ESLint enforces this. Copy lives in the components, and the Getting Started achievements
+and loop timing shown in the achievements section are in
+`src/consts/onboarding-achievements.consts.ts`.
 
 ## Deploy to GitHub Pages
 
