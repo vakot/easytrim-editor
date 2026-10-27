@@ -131,13 +131,17 @@ function LandingAchievements() {
           </ul>
         </div>
 
+        {/*
+         * Toasts differ in height when a description wraps. Pinning them to the top of a panel
+         * whose height never depends on them keeps every toast still; only the space below varies.
+         */}
         <div
           aria-label="Achievement unlock preview"
-          className="relative mx-auto flex min-h-64 w-full max-w-md items-center justify-center rounded-2xl border bg-card/40 px-6 py-12 sm:px-10"
+          className="relative mx-auto h-64 w-full max-w-md rounded-2xl border bg-card/40 px-6 pt-20 sm:px-10"
           ref={panel}
           role="region"
         >
-          <div className="grid w-full">
+          <div className="grid w-full items-start">
             {toasts.map(({ entry, exiting }) => (
               <div
                 aria-hidden={exiting ? "true" : undefined}
