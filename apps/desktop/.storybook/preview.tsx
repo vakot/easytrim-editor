@@ -3,9 +3,8 @@ import "../src/styles/globals.css";
 import type { Decorator, Preview } from "@storybook/react";
 import { type ReactNode, useLayoutEffect } from "react";
 
+import { PRIMARY_COLOR_PRESETS, primaryColorPalette } from "@easytrim-editor/ui/theme";
 import { TooltipProvider } from "@easytrim-editor/ui/tooltip";
-
-import { PRIMARY_COLOR_PRESETS, primaryColorPalette } from "../src/app/theme/theme";
 
 type Theme = "dark" | "light";
 type PrimaryColor = (typeof PRIMARY_COLOR_PRESETS)[number]["id"];
