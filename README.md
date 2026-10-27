@@ -13,6 +13,12 @@ project files.
 - Export selected segments with Fast Export or Optimized Export.
 - Track active and completed exports in the desktop queue.
 
+## Website
+
+The product website at <https://vakot.github.io/easytrim-editor/> is built from
+[`apps/landing`](apps/landing/README.md) and deployed to GitHub Pages; its README covers local
+development, deployment settings, and updating screenshots.
+
 ## Requirements
 
 Development requires Node.js 22.12+, pnpm 11.18.0, Rust 1.97.1 through rustup, and FFmpeg/FFprobe
