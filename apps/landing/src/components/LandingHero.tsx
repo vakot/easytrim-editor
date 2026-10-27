@@ -10,7 +10,7 @@ import { LandingScreenshot } from "./LandingScreenshot";
 
 function LandingHero() {
   return (
-    <section aria-labelledby="hero-title" className="relative isolate overflow-hidden" id="top">
+    <section aria-labelledby="hero-title" className="relative isolate overflow-x-clip" id="top">
       <div aria-hidden="true" className="hero-grid absolute inset-0 -z-10" />
 
       <div className="mx-auto flex max-w-6xl flex-col items-center px-4 pt-16 text-center sm:px-6 sm:pt-24">
