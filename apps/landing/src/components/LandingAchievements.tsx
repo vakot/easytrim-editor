@@ -148,7 +148,7 @@ function LandingAchievements() {
                 className={cn(
                   "col-start-1 row-start-1",
                   exiting &&
-                    "pointer-events-none animate-out duration-300 fill-mode-forwards fade-out slide-out-to-top-3",
+                    "pointer-events-none animate-out animation-duration-300 fill-mode-forwards fade-out slide-out-to-top-3",
                 )}
                 data-slot={exiting ? "leaving-toast" : "current-toast"}
                 key={`${entry.cycle}-${entry.index}`}

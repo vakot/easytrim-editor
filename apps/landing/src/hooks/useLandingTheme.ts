@@ -1,4 +1,5 @@
 import { useLayoutEffect, useState, useSyncExternalStore } from "react";
+import { flushSync } from "react-dom";
 
 import {
   applyTheme,
@@ -11,6 +12,37 @@ import {
 
 /** Shared with the pre-paint script in `index.html`, which applies a saved choice before React. */
 const THEME_STORAGE_KEY = "easytrim-landing-theme";
+
+function prefersReducedMotion(): boolean {
+  return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
+}
+
+/**
+ * Runs a theme change inside a view transition, so the page crossfades to the new colors in the
+ * 300ms set in `globals.css` instead of each element following its own transition. The update is
+ * flushed synchronously so the new theme is applied before the browser captures the new view.
+ * Without view transitions, or with reduced motion, the theme switches at once.
+ *
+ * `data-theme-switching` pauses element transitions for the switch, so the new view, or the page
+ * itself without a view transition, shows the final colors at once.
+ */
+function transitionTheme(update: () => void) {
+  const root = document.documentElement;
+  root.dataset.themeSwitching = "";
+  const done = () => delete root.dataset.themeSwitching;
+
+  if (typeof document.startViewTransition !== "function" || prefersReducedMotion()) {
+    update();
+    // Keep transitions paused until the new colors have been styled once.
+    requestAnimationFrame(() => requestAnimationFrame(done));
+    return;
+  }
+  document.startViewTransition(() => flushSync(update)).finished.finally(done);
+}
+
+function subscribeToSystemThemeTransition(onChange: () => void): () => void {
+  return subscribeToSystemTheme(() => transitionTheme(onChange));
+}
 
 function readStoredTheme(): ThemePreference {
   try {
@@ -36,7 +68,12 @@ function storeTheme(preference: ThemePreference) {
  */
 function useLandingTheme() {
   const [preference, setPreference] = useState(readStoredTheme);
-  const systemDark = useSyncExternalStore(subscribeToSystemTheme, systemPrefersDark, () => false);
+  const systemDark = useSyncExternalStore(
+    subscribeToSystemThemeTransition,
+    systemPrefersDark,
+    () => false,
+  );
+
   const resolvedTheme = resolveTheme(preference, systemDark);
 
   useLayoutEffect(() => {
@@ -45,7 +82,9 @@ function useLandingTheme() {
 
   function changePreference(next: ThemePreference) {
     storeTheme(next);
-    setPreference(next);
+    // A choice that resolves to the colors already shown has nothing to crossfade.
+    if (resolveTheme(next, systemDark) === resolvedTheme) setPreference(next);
+    else transitionTheme(() => setPreference(next));
   }
 
   return { preference, resolvedTheme, setPreference: changePreference };

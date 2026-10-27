@@ -10,6 +10,24 @@
   }
 }
 
+/*
+ * A theme change crossfades the whole page in one 300ms view transition (see `useLandingTheme`), so
+ * text, surfaces, gradients, and shadows all arrive together. Element transitions are paused for
+ * the switch, so the new view shows its final colors and the crossfade is the only motion.
+ */
+::view-transition-group(root),
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 300ms;
+  animation-timing-function: ease;
+}
+
+:root[data-theme-switching] *,
+:root[data-theme-switching] *::before,
+:root[data-theme-switching] *::after {
+  transition: none !important;
+}
+
 /* A soft amber light behind the hero screenshot, drawn from the theme's primary color. */
 .hero-glow {
   background:
