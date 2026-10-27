@@ -16,6 +16,7 @@
     "./color-types": "./src/lib/color.types.ts",
     "./confetti": "./src/components/confetti.tsx",
     "./date-time": "./src/lib/date-time.utils.ts",
+    "./empty": "./src/components/empty.tsx",
     "./galactic-glyphs": "./src/lib/galactic-glyphs.consts.ts",
     "./globals.css": "./src/styles/globals.css",
     "./item": "./src/components/item.tsx",

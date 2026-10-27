@@ -5,8 +5,6 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@easytrim-editor/ui/button";
 import { cn } from "@easytrim-editor/ui/class-names";
-import { Separator } from "@easytrim-editor/ui/separator";
-
 import {
   Empty,
   EmptyContent,
@@ -14,7 +12,9 @@ import {
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from "@/components/ui/empty";
+} from "@easytrim-editor/ui/empty";
+import { Separator } from "@easytrim-editor/ui/separator";
+
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 
 import {
