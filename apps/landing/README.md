@@ -62,10 +62,10 @@ Screenshots are WebP files in `src/assets/screenshots`, described in
    SRC=path/to/screenshot.png
    webp() { ffmpeg -y -i "$SRC" -vf "$1" -frames:v 1 -c:v libwebp -quality 80 -compression_level 6 "$2"; }
    for width in 1280 1920 2560; do webp "scale=$width:-2:flags=lanczos" "editor-$width.webp"; done
-   webp "crop=1900:414:787:1697" timeline-1900.webp
-   webp "crop=1900:414:787:1697,scale=960:-2:flags=lanczos" timeline-960.webp
-   webp "crop=748:700:19:58" queue-748.webp
-   webp "crop=748:700:19:58,scale=480:-2:flags=lanczos" queue-480.webp
+   webp "crop=2652:576:1170:1494,scale=1900:-2:flags=lanczos" timeline-1900.webp
+   webp "crop=2652:576:1170:1494,scale=960:-2:flags=lanczos" timeline-960.webp
+   webp "crop=1032:1120:120:86" sources-1032.webp
+   webp "crop=1032:1120:120:86,scale=520:-2:flags=lanczos" sources-520.webp
    ```
 
    Crops are `width:height:x:y` in source pixels; adjust them to the new layout.
