@@ -7,7 +7,7 @@ import { LandingScreenshot } from "./LandingScreenshot";
 const sourcePoints = [
   "Find any source with search",
   "See each video's details at a glance",
-  "Remove leftovers after trim",
+  "Delete sources right from the editor",
 ] as const;
 
 function LandingShowcase() {
@@ -37,7 +37,8 @@ function LandingShowcase() {
             <span className="text-lg font-semibold">A timeline made for the cut</span>
             <span className="text-muted-foreground">
               The selected segment, its timecodes, live audio levels, and every track&rsquo;s
-              waveform sit together, so you always see and hear exactly what you are about to save.
+              waveform sit together, so you always see and hear exactly what you are about to
+              export.
             </span>
           </figcaption>
         </figure>
