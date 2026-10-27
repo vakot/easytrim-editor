@@ -3,6 +3,8 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@easytrim-editor/ui/button";
+import type { HexColor } from "@easytrim-editor/ui/color-types";
+import { PRIMARY_COLOR_PRESETS } from "@easytrim-editor/ui/theme";
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
@@ -27,7 +29,6 @@ import {
   selectThemePreference,
   selectUiScalePercent,
 } from "@/app/store/slices/preferences-slice";
-import { PRIMARY_COLOR_PRESETS } from "@/app/theme/theme";
 import { useTheme } from "@/app/theme/useTheme";
 import {
   ColorPicker,
@@ -38,7 +39,6 @@ import {
   ColorPickerSpectrum,
   ColorSample,
 } from "@/components/color";
-import type { HexColor } from "@/lib/color.types";
 
 import { CommandButton, SettingRow, SettingsSection } from "../components/SettingRow";
 

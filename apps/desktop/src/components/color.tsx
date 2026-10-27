@@ -3,11 +3,6 @@
 import * as React from "react";
 
 import { cn } from "@easytrim-editor/ui/class-names";
-
-import { Input } from "@/components/ui/input";
-import { Slot } from "@/components/ui/slot";
-
-import type { HexColor, HsvColor } from "@/lib/color.types";
 import {
   clampHue,
   clampPercent,
@@ -19,7 +14,11 @@ import {
   positionFromHue,
   positionFromSaturation,
   positionFromValue,
-} from "@/lib/color.utils";
+} from "@easytrim-editor/ui/color";
+import type { HexColor, HsvColor } from "@easytrim-editor/ui/color-types";
+
+import { Input } from "@/components/ui/input";
+import { Slot } from "@/components/ui/slot";
 
 interface ColorPickerState {
   hexDraft: string;

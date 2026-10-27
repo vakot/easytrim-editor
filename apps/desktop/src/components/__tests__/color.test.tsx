@@ -2,6 +2,9 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, type Mock, vi } from "vitest";
 
+import { hsvToHex } from "@easytrim-editor/ui/color";
+import type { HexColor } from "@easytrim-editor/ui/color-types";
+
 import {
   ColorPicker,
   ColorPickerHue,
@@ -10,8 +13,6 @@ import {
   ColorPickerSaturationValue,
   ColorPickerSpectrum,
 } from "@/components/color";
-import type { HexColor } from "@/lib/color.types";
-import { hsvToHex } from "@/lib/color.utils";
 
 function toRgb(hex: string) {
   const channels = [1, 3, 5].map((start) => Number.parseInt(hex.slice(start, start + 2), 16));

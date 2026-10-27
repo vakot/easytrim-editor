@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { isHexColor } from "@easytrim-editor/ui/color";
+
 import { DEFAULT_SIDEBAR_LAYOUT } from "@/app/layout/lib/sidebar-layout";
 import { DEFAULT_PREFERENCES, type Preferences } from "@/app/preferences";
 import {
@@ -27,7 +29,6 @@ import {
   uiScalingReset,
 } from "@/app/store/slices/preferences-slice";
 import type { RootState } from "@/app/store/store";
-import { isHexColor } from "@/lib/color.utils";
 
 describe("preferences Redux domain", () => {
   it("starts from deterministic product defaults without persistence access", () => {

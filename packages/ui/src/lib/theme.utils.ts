@@ -1,5 +1,5 @@
-import type { HexColor } from "@/lib/color.types";
-import { hexToHsl, hslToHex } from "@/lib/color.utils";
+import type { HexColor } from "./color.types";
+import { hexToHsl, hslToHex } from "./color.utils";
 
 const SYSTEM_THEME_QUERY = "(prefers-color-scheme: dark)";
 export type ThemePreference = "system" | "light" | "dark";
@@ -53,7 +53,30 @@ function subscribeToSystemTheme(onChange: () => void): () => void {
   return () => mediaQuery.removeEventListener("change", onChange);
 }
 
+/**
+ * Applies a theme to the document root the way the token stylesheet expects: `.dark` whenever the
+ * resolved theme is dark, and `.light` only for an explicit light choice, so a system light theme
+ * keeps following the operating system's default tokens.
+ */
+function applyTheme(root: HTMLElement, preference: ThemePreference, resolvedTheme: ResolvedTheme) {
+  root.classList.toggle("light", preference === "light");
+  root.classList.toggle("dark", resolvedTheme === "dark");
+  root.dataset.theme = resolvedTheme;
+  root.style.colorScheme = resolvedTheme;
+}
+
+/** Sets the light and dark primary tokens derived from one primary color. */
+function applyPrimaryColor(root: HTMLElement, primaryColor: PrimaryColor) {
+  const palette = primaryColorPalette(primaryColor);
+  root.style.setProperty("--primary-light", palette.light);
+  root.style.setProperty("--primary-foreground-light", palette.lightForeground);
+  root.style.setProperty("--primary-dark", palette.dark);
+  root.style.setProperty("--primary-foreground-dark", palette.darkForeground);
+}
+
 export {
+  applyPrimaryColor,
+  applyTheme,
   isThemePreference,
   primaryColorPalette,
   resolveTheme,

@@ -12,6 +12,8 @@
     "./button": "./src/components/button.tsx",
     "./card": "./src/components/card.tsx",
     "./class-names": "./src/lib/class-names.utils.ts",
+    "./color": "./src/lib/color.utils.ts",
+    "./color-types": "./src/lib/color.types.ts",
     "./confetti": "./src/components/confetti.tsx",
     "./date-time": "./src/lib/date-time.utils.ts",
     "./galactic-glyphs": "./src/lib/galactic-glyphs.consts.ts",
@@ -23,6 +25,7 @@
     "./scroll-area": "./src/components/scroll-area.tsx",
     "./separator": "./src/components/separator.tsx",
     "./text-reveal": "./src/components/text-reveal.tsx",
+    "./theme": "./src/lib/theme.utils.ts",
     "./timestamp": "./src/components/timestamp.tsx",
     "./tooltip": "./src/components/tooltip.tsx",
     "./use-relative-time": "./src/hooks/use-relative-time.ts"

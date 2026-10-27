@@ -10,6 +10,10 @@ import {
 } from "redux-persist";
 import reduxStorageModule from "redux-persist/lib/storage";
 
+import { isHexColor } from "@easytrim-editor/ui/color";
+import type { HexColor } from "@easytrim-editor/ui/color-types";
+import { isThemePreference } from "@easytrim-editor/ui/theme";
+
 import { isLayoutDensity } from "@/app/layout/lib/layout-density";
 import { normalizeSidebarLayout } from "@/app/layout/lib/sidebar-layout";
 import {
@@ -20,9 +24,6 @@ import {
   type Preferences,
   UI_SCALE_STEP_PERCENT,
 } from "@/app/preferences";
-import { isThemePreference } from "@/app/theme/theme";
-import type { HexColor } from "@/lib/color.types";
-import { isHexColor } from "@/lib/color.utils";
 
 interface LegacyThemeState {
   customPrimaryColor?: unknown;

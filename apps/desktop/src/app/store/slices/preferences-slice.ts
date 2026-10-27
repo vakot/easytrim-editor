@@ -1,5 +1,7 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
+import type { PrimaryColor, ThemePreference } from "@easytrim-editor/ui/theme";
+
 import {
   DEFAULT_LAYOUT_DENSITY,
   isLayoutDensity,
@@ -24,7 +26,6 @@ import {
   UI_SCALE_STEP_PERCENT,
 } from "@/app/preferences";
 import { queueSettingsReset } from "@/app/store/actions/queue-actions";
-import type { PrimaryColor, ThemePreference } from "@/app/theme/theme";
 
 import type { RootState } from "../store";
 
