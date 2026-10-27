@@ -1,9 +1,9 @@
 import { Download } from "lucide-react";
 
-import { GithubIcon } from "@easytrim-editor/ui/brand-icons";
+import { GithubIcon, KofiIcon } from "@easytrim-editor/ui/brand-icons";
 import { Button } from "@easytrim-editor/ui/button";
 
-import { DOWNLOAD_URL, REPOSITORY_URL } from "../consts/links.consts";
+import { DOWNLOAD_URL, KOFI_URL, REPOSITORY_URL } from "../consts/links.consts";
 
 import { LandingThemeSwitch } from "./LandingThemeSwitch";
 
@@ -48,6 +48,16 @@ function LandingHeader() {
 
         <div className="ml-auto flex items-center gap-2">
           <LandingThemeSwitch />
+          {/* Phones keep the header to the essentials; the footer always offers Ko-fi. */}
+          <Button asChild className="max-sm:hidden" size="icon-lg" variant="ghost">
+            <a
+              aria-label="Support EasyTrim Editor on Ko-fi"
+              href={KOFI_URL}
+              title="Support on Ko-fi"
+            >
+              <KofiIcon className="text-primary" />
+            </a>
+          </Button>
           <Button asChild size="icon-lg" variant="ghost">
             <a aria-label="View EasyTrim Editor on GitHub" href={REPOSITORY_URL}>
               <GithubIcon />

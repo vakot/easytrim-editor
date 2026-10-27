@@ -1,7 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { DOWNLOAD_URL, REPOSITORY_URL } from "../consts/links.consts";
+import { DOWNLOAD_URL, KOFI_URL, REPOSITORY_URL } from "../consts/links.consts";
 import { Landing } from "../Landing";
 
 describe("Landing", () => {
@@ -24,6 +24,20 @@ describe("Landing", () => {
     expect(screen.getByRole("link", { name: "View on GitHub" })).toHaveAttribute(
       "href",
       REPOSITORY_URL,
+    );
+  });
+
+  it("offers Ko-fi support from the header and the footer", () => {
+    render(<Landing />);
+
+    expect(screen.getByRole("link", { name: "Support EasyTrim Editor on Ko-fi" })).toHaveAttribute(
+      "href",
+      KOFI_URL,
+    );
+    const footer = screen.getByRole("navigation", { name: "Footer" });
+    expect(within(footer).getByRole("link", { name: "Support on Ko-fi" })).toHaveAttribute(
+      "href",
+      KOFI_URL,
     );
   });
 
