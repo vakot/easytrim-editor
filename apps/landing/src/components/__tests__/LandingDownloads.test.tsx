@@ -79,12 +79,12 @@ describe("LandingDownloads", () => {
       await screen.findByText("v1.15.0 has no macOS installer yet.", { exact: false }),
     ).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Download for/ })).not.toBeInTheDocument();
-    expect(
-      within(platformCard("macOS")).getByText("No installer in this release yet."),
-    ).toBeInTheDocument();
-    expect(
-      within(platformCard("Linux")).getByText("No installer in this release yet."),
-    ).toBeInTheDocument();
+    for (const name of ["macOS", "Linux"]) {
+      const empty = platformCard(name).querySelector("[data-slot='empty']");
+
+      expect(empty).toHaveTextContent("No installer in this release yet.");
+    }
+    expect(platformCard("Windows").querySelector("[data-slot='empty']")).toBeNull();
     expect(installerLinks().map((link) => link.getAttribute("href"))).toEqual([
       download("EasyTrim_1.15.0_windows_x64_nsis.exe"),
       download("EasyTrim_1.15.0_windows_x64_msi.msi"),
@@ -172,6 +172,20 @@ describe("LandingDownloads", () => {
     ).toBeInTheDocument();
   });
 
+  it("says so when the release has no installers at all", async () => {
+    stubVisitor("windows");
+    stubGithub({ release: { ...windowsOnlyRelease, assets: [] } });
+    render(<LandingDownloads />);
+
+    expect(
+      await screen.findByText("v1.15.0 has no Windows installer yet.", { exact: false }),
+    ).toBeInTheDocument();
+    for (const name of ["Windows", "macOS", "Linux"]) {
+      expect(platformCard(name).querySelector("[data-slot='empty']")).not.toBeNull();
+    }
+    expect(installerLinks()).toHaveLength(0);
+  });
+
   describe("macOS first launch", () => {
     const command = 'xattr -dr com.apple.quarantine "/Applications/EasyTrim Editor.app"';
 
@@ -205,14 +219,20 @@ describe("LandingDownloads", () => {
       Reflect.deleteProperty(navigator, "clipboard");
     });
 
-    it("stays quiet when there is no macOS installer to help with", async () => {
+    it("keeps the note in the macOS card even when the release has no macOS installer", async () => {
       stubVisitor("macos");
       stubGithub();
       render(<LandingDownloads />);
 
       await screen.findByText("v1.15.0 has no macOS installer yet.", { exact: false });
 
-      expect(screen.queryByText("Can’t open it on macOS?")).not.toBeInTheDocument();
+      const card = platformCard("macOS");
+      expect(card.querySelector("[data-slot='empty']")).toHaveTextContent(
+        "No installer in this release yet.",
+      );
+      expect(within(card).getByText("Can’t open it on macOS?")).toBeInTheDocument();
+      expect(within(card).getByText(command)).toBeInTheDocument();
+      // Nothing is being downloaded, so there is no first launch to warn about.
       expect(screen.queryByText(/The steps are under macOS below/)).not.toBeInTheDocument();
     });
 

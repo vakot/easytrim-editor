@@ -1,4 +1,4 @@
-import { Download, ExternalLink, LoaderCircle, RotateCw } from "lucide-react";
+import { Download, ExternalLink, LoaderCircle, PackageOpen, RotateCw } from "lucide-react";
 import type { ComponentType, SVGProps } from "react";
 
 import { Badge } from "@easytrim-editor/ui/badge";
@@ -6,6 +6,7 @@ import { AppleIcon, GithubIcon, LinuxIcon, WindowsIcon } from "@easytrim-editor/
 import { Button } from "@easytrim-editor/ui/button";
 import { cn } from "@easytrim-editor/ui/class-names";
 import { formatDateOnly } from "@easytrim-editor/ui/date-time";
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia } from "@easytrim-editor/ui/empty";
 
 import { FFMPEG_DOWNLOAD_URL, LATEST_RELEASE_URL, RELEASES_URL } from "../consts/links.consts";
 import { type GithubData, useGithubData } from "../hooks/useGithubData";
@@ -202,7 +203,9 @@ function Recommendation({
       <p className="max-w-md text-sm text-muted-foreground">
         {platform === "mobile"
           ? "EasyTrim Editor is a desktop app. Open this page on your computer to download it."
-          : "Choose the installer for your computer below."}
+          : state.data.installers.length === 0
+            ? "This release has no installers yet."
+            : "Choose the installer for your computer below."}
       </p>
     );
   }
@@ -311,9 +314,16 @@ function PlatformInstallers({
           ))}
         </ul>
       ) : (
-        <p className="mt-4 text-sm text-muted-foreground">No installer in this release yet.</p>
+        <Empty className="mt-4 gap-3 p-4">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <PackageOpen />
+            </EmptyMedia>
+            <EmptyDescription>No installer in this release yet.</EmptyDescription>
+          </EmptyHeader>
+        </Empty>
       )}
-      {platform === "macos" && installers.length > 0 && <LandingMacosHelp />}
+      {platform === "macos" && <LandingMacosHelp />}
     </li>
   );
 }
