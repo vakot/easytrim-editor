@@ -1,11 +1,14 @@
 import { cn } from "@easytrim-editor/ui/class-names";
 
 import type { Screenshot } from "../consts/screenshots.consts";
+import { reveal } from "../lib/reveal.utils";
 
 type LandingScreenshotProps = {
   className?: string;
   /** Loads the image right away; reserve it for the screenshot visible on arrival. */
   priority?: boolean;
+  /** Fades the frame in the first time it scrolls into view. */
+  revealed?: boolean;
   screenshot: Screenshot;
   sizes: string;
 };
@@ -14,6 +17,7 @@ type LandingScreenshotProps = {
 function LandingScreenshot({
   className,
   priority = false,
+  revealed = false,
   screenshot,
   sizes,
 }: LandingScreenshotProps) {
@@ -23,6 +27,7 @@ function LandingScreenshot({
         "overflow-hidden rounded-xl border bg-card p-1 shadow-2xl shadow-black/15 sm:p-1.5 dark:shadow-black/50",
         className,
       )}
+      {...(revealed ? reveal : undefined)}
     >
       <img
         alt={screenshot.alt}

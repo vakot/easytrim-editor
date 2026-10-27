@@ -1,5 +1,5 @@
 import { Lock, Medal, Pause, Play, Sparkles } from "lucide-react";
-import { type RefObject, useEffect, useRef, useState } from "react";
+import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
 
 import { AchievementUnlockToast } from "@easytrim-editor/ui/achievement-unlock-toast";
 import { Button } from "@easytrim-editor/ui/button";
@@ -9,6 +9,7 @@ import {
   onboardingAchievements,
   onboardingLoopTiming,
 } from "../consts/onboarding-achievements.consts";
+import { observeReveal, reveal, REVEAL_ANIMATION_NAME } from "../lib/reveal.utils";
 
 const details = [
   { icon: Medal, text: "Milestone series in Bronze, Silver, and Gold" },
@@ -30,9 +31,9 @@ function prefersReducedMotion(): boolean {
 }
 
 /**
- * Cycles through the toasts while playing and on screen. The loop starts the first time the panel
- * is seen, so the first toast arrives in view, and keeps the previous toast briefly so it can fade
- * out over the next one's entrance.
+ * Cycles through the toasts while playing and on screen. The loop starts once the panel has been
+ * seen and has finished fading in, so the first toast arrives in view, and keeps the previous toast
+ * briefly so it can fade out over the next one's entrance.
  */
 function useToastLoop(
   playing: boolean,
@@ -41,6 +42,11 @@ function useToastLoop(
 ) {
   const [visible, setVisible] = useState(true);
   const [started, setStarted] = useState(() => typeof IntersectionObserver === "undefined");
+  // The panel's entrance only runs with an observer and without reduced motion.
+  const [settled, setSettled] = useState(
+    () => typeof IntersectionObserver === "undefined" || prefersReducedMotion(),
+  );
+
   const [current, setCurrent] = useState<LoopEntry>({ cycle: 0, index: 0 });
   const [leaving, setLeaving] = useState<LoopEntry | null>(null);
 
@@ -58,14 +64,34 @@ function useToastLoop(
   }, [panel]);
 
   useEffect(() => {
-    if (!started || !playing || !visible) return;
+    const element = panel.current;
+    if (!element || settled) return;
+    const settle = (event: AnimationEvent) => {
+      // Toasts animate inside the panel and their events bubble up; only the panel's own counts.
+      if (event.target === element && event.animationName === REVEAL_ANIMATION_NAME) {
+        setSettled(true);
+      }
+    };
+
+    element.addEventListener("animationend", settle);
+    element.addEventListener("animationcancel", settle);
+    return () => {
+      element.removeEventListener("animationend", settle);
+      element.removeEventListener("animationcancel", settle);
+    };
+  }, [panel, settled]);
+
+  const ready = started && settled;
+
+  useEffect(() => {
+    if (!ready || !playing || !visible) return;
     const timer = setTimeout(() => {
       if (animateExit) setLeaving(current);
       setCurrent(nextEntry(current));
     }, onboardingLoopTiming.toastMs);
 
     return () => clearTimeout(timer);
-  }, [animateExit, current, playing, started, visible]);
+  }, [animateExit, current, playing, ready, visible]);
 
   useEffect(() => {
     if (!leaving) return;
@@ -74,7 +100,7 @@ function useToastLoop(
     return () => clearTimeout(timer);
   }, [leaving]);
 
-  return { current: started ? current : null, leaving };
+  return { current: ready ? current : null, leaving };
 }
 
 /**
@@ -83,7 +109,18 @@ function useToastLoop(
  * pause the loop.
  */
 function LandingAchievements() {
-  const panel = useRef<HTMLDivElement>(null);
+  const panel = useRef<HTMLDivElement | null>(null);
+  // The panel is both watched by the loop and revealed, so one ref serves the two.
+  const setPanel = useCallback((element: HTMLDivElement | null) => {
+    panel.current = element;
+    const stopRevealing = observeReveal(element);
+
+    return () => {
+      panel.current = null;
+      stopRevealing?.();
+    };
+  }, []);
+
   const [reducedMotion] = useState(prefersReducedMotion);
   const [playing, setPlaying] = useState(!reducedMotion);
   const { current, leaving } = useToastLoop(playing, !reducedMotion, panel);
@@ -103,22 +140,23 @@ function LandingAchievements() {
     >
       <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:gap-16">
         <div>
-          <p className="text-sm font-semibold tracking-widest text-primary uppercase">
+          <p className="text-sm font-semibold tracking-widest text-primary uppercase" {...reveal}>
             Achievements
           </p>
           <h2
             className="mt-3 text-3xl font-bold tracking-tight text-balance sm:text-4xl"
             id="achievements-title"
+            {...reveal}
           >
             Your first edit, celebrated.
           </h2>
-          <p className="mt-4 text-muted-foreground">
+          <p className="mt-4 text-muted-foreground" {...reveal}>
             The Getting Started achievements walk you through the essentials: importing, trimming,
             cropping, audio, the queue, and shortcuts. Each one is celebrated as you earn it.
           </p>
           <ul className="mt-6 grid gap-3 text-sm">
             {details.map(({ icon: Icon, text }) => (
-              <li className="flex items-center gap-3" key={text}>
+              <li className="flex items-center gap-3" key={text} {...reveal}>
                 <span
                   aria-hidden="true"
                   className="grid size-7 shrink-0 place-items-center rounded-md bg-primary/10 text-primary [&_svg]:size-4"
@@ -138,7 +176,8 @@ function LandingAchievements() {
         <div
           aria-label="Achievement unlock preview"
           className="relative mx-auto h-64 w-full max-w-md rounded-2xl border bg-card/40 px-6 pt-20 sm:px-10"
-          ref={panel}
+          data-reveal=""
+          ref={setPanel}
           role="region"
         >
           <div className="grid w-full items-start">

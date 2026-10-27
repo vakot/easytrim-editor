@@ -5,6 +5,8 @@ import {
   onboardingAchievements,
   onboardingLoopTiming,
 } from "../../consts/onboarding-achievements.consts";
+import { REVEAL_ANIMATION_NAME } from "../../lib/reveal.utils";
+import { stubIntersectionObserver } from "../../test/intersection-observer.mock";
 import { LandingAchievements } from "../LandingAchievements";
 
 const { exitMs, toastMs } = onboardingLoopTiming;
@@ -112,5 +114,60 @@ describe("LandingAchievements", () => {
 
     expect(title(slot("current-toast"))).toBe(onboardingAchievements[1]!.title);
     expect(slot("leaving-toast")).toBeNull();
+  });
+
+  describe("with intersection observers", () => {
+    function endAnimation(target: Element, animationName: string) {
+      const event = new Event("animationend", { bubbles: true });
+
+      Object.defineProperty(event, "animationName", { value: animationName });
+      act(() => {
+        target.dispatchEvent(event);
+      });
+    }
+
+    function scrollIntoView(mock: ReturnType<typeof stubIntersectionObserver>) {
+      act(() => {
+        for (const observer of mock.instances) observer.show([...observer.observed]);
+      });
+    }
+
+    it("waits for the panel to finish appearing before the first toast arrives", () => {
+      const mock = stubIntersectionObserver();
+      render(<LandingAchievements />);
+      const panel = screen.getByRole("region", { name: "Achievement unlock preview" });
+
+      expect(slot("current-toast")).toBeNull();
+      scrollIntoView(mock);
+      expect(panel).toHaveAttribute("data-revealed");
+      expect(slot("current-toast")).toBeNull();
+
+      endAnimation(panel, REVEAL_ANIMATION_NAME);
+      expect(title(slot("current-toast"))).toBe(onboardingAchievements[0]!.title);
+    });
+
+    it("ignores animations that finish inside the panel", () => {
+      const mock = stubIntersectionObserver();
+      render(<LandingAchievements />);
+      scrollIntoView(mock);
+
+      endAnimation(screen.getByRole("button", { name: "Pause the preview" }), "enter");
+      endAnimation(
+        screen.getByRole("region", { name: "Achievement unlock preview" }),
+        "something-else",
+      );
+
+      expect(slot("current-toast")).toBeNull();
+    });
+
+    it("shows the toast straight away for visitors who prefer reduced motion", () => {
+      preferReducedMotion(true);
+      const mock = stubIntersectionObserver();
+      render(<LandingAchievements />);
+
+      scrollIntoView(mock);
+
+      expect(title(slot("current-toast"))).toBe(onboardingAchievements[0]!.title);
+    });
   });
 });

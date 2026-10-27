@@ -20,6 +20,7 @@ import {
   platformNames,
   type VisitorPlatform,
 } from "../lib/platform.utils";
+import { reveal } from "../lib/reveal.utils";
 
 const platformIcons: Record<DesktopPlatform, ComponentType<SVGProps<SVGSVGElement>>> = {
   linux: LinuxIcon,
@@ -64,7 +65,10 @@ function LandingDownloads() {
       id="downloads"
     >
       <div className="mx-auto max-w-4xl">
-        <div className="amber-edge relative isolate overflow-hidden rounded-2xl px-6 py-14 text-center sm:px-12 sm:py-16">
+        <div
+          className="amber-edge relative isolate overflow-hidden rounded-2xl px-6 py-14 text-center sm:px-12 sm:py-16"
+          {...reveal}
+        >
           <div aria-hidden="true" className="hero-glow absolute inset-0 -z-10 opacity-60" />
           <img
             alt=""
@@ -116,7 +120,7 @@ function LandingDownloads() {
           </ul>
         )}
 
-        <div className="mt-8 flex justify-center">
+        <div className="mt-8 flex justify-center" {...reveal}>
           <Button asChild size="lg" variant="ghost">
             <a href={RELEASES_URL}>
               <GithubIcon />
@@ -256,7 +260,7 @@ function PlatformInstallers({
       : [];
 
   return (
-    <li className={cn("rounded-xl border bg-card p-5", detected && "amber-edge")}>
+    <li className={cn("rounded-xl border bg-card p-5", detected && "amber-edge")} {...reveal}>
       <div className="flex items-center gap-3">
         <Icon className="size-5" />
         <h3 className="font-semibold">{name}</h3>

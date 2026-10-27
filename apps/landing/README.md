@@ -23,6 +23,11 @@ pnpm --filter @easytrim-editor/landing typecheck
 pnpm --filter @easytrim-editor/landing test
 ```
 
+Sections animate in as they first scroll into view. Spread `reveal` from `src/lib/reveal.utils.ts`
+onto an element to fade it in once per visit; elements that appear together follow one another in
+page order. Visitors who prefer reduced motion, and browsers without `IntersectionObserver`, see
+the content immediately. The styles are at the end of `src/styles/globals.css`.
+
 The site may import only `@easytrim-editor/ui` subpaths, never desktop code, Tauri, Redux, or
 i18n; ESLint enforces this. Copy lives in the components, and the Getting Started achievements
 and loop timing shown in the achievements section are in
