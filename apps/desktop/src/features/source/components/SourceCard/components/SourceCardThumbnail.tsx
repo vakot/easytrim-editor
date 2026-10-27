@@ -1,9 +1,9 @@
 import { FileVideo, Play } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { Badge } from "@easytrim-editor/ui/badge";
 import { cn } from "@easytrim-editor/ui/class-names";
 
-import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 
 import { useAppSelector } from "@/app/store/redux-hooks";

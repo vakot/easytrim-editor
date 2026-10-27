@@ -101,7 +101,7 @@ pnpm check
 ```
 
 This runs formatting, linting, Knip, TypeScript and Storybook typechecks, tests, release-script
-tests, the Storybook build, and the production web build. Individual scripts are available when a
+tests, the Storybook build, and the production desktop and landing page builds. Individual scripts are available when a
 focused check is more useful:
 
 ```sh
@@ -114,6 +114,7 @@ pnpm test
 pnpm test:release
 pnpm build:storybook
 pnpm build:web
+pnpm build:landing
 ```
 
 ## Bundle analysis
@@ -198,6 +199,12 @@ playing, step frames, loop a trimmed segment, change audio tracks, and replace t
 seek. Confirm that the playhead follows input, the final preview lands precisely, audio resumes at
 that position, and discarded sources stop requesting data. JSDOM tests simulate decoder events;
 they do not measure WebView or disk latency.
+
+## Landing page
+
+`pnpm dev:landing`, `pnpm build:landing`, and `pnpm preview:landing` run the static product website
+in `apps/landing`. See its [README](../apps/landing/README.md) for GitHub Pages deployment and
+screenshot updates.
 
 ## Storybook
 

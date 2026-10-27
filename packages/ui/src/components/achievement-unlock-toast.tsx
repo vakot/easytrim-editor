@@ -1,27 +1,69 @@
+import type { LucideIcon } from "lucide-react";
 import { useReducedMotion } from "motion/react";
 import type { CSSProperties } from "react";
 
-import { cn } from "@easytrim-editor/ui/class-names";
-import { Confetti } from "@easytrim-editor/ui/confetti";
-import { Ribbon } from "@easytrim-editor/ui/ribbon";
-import { TextReveal } from "@easytrim-editor/ui/text-reveal";
-
-import { achievementTierClassNames } from "../consts/achievement-tier-styles.consts";
+import { useAchievementSecretGradientId } from "../hooks/use-achievement-secret-gradient-id";
 import {
-  achievementToastPresentation,
-  secretRevealEnd,
-  secretRevealTimeline,
-} from "../consts/achievement-toast.consts";
-import { galacticGlyphs } from "../consts/galactic-glyphs.consts";
-import { useAchievementSecretGradientId } from "../hooks/useAchievementSecretGradientId";
-import type { AchievementAnnouncement } from "../types/achievement-toast.types";
+  type AchievementTier,
+  achievementTierClassNames,
+} from "../lib/achievement-tier-styles.consts";
+import { cn } from "../lib/class-names.utils";
+import { galacticGlyphs } from "../lib/galactic-glyphs.consts";
 
-import secretStyles from "./AchievementSecret.module.css";
-import { AchievementSecretGradient } from "./AchievementSecretGradient";
-import styles from "./AchievementUnlockToast.module.css";
+import secretStyles from "./achievement-secret.module.css";
+import { AchievementSecretGradient } from "./achievement-secret-gradient";
+import styles from "./achievement-unlock-toast.module.css";
+import { Confetti, type ConfettiIntensity } from "./confetti";
+import { Ribbon } from "./ribbon";
+import { TextReveal } from "./text-reveal";
+
+/** Which celebration an unlocked achievement gets; each variant has its own look and intensity. */
+type AchievementToastVariant = "standard" | AchievementTier | "secret";
+
+/**
+ * Everything one achievement's toast shows, already localized and independent of how it is
+ * presented, so the same content renders in the application, on the website, in stories, and in
+ * tests.
+ */
+type AchievementToastContent = {
+  description: string;
+  icon: LucideIcon;
+  /** The tier to show, or null for a standalone achievement. */
+  tier: AchievementTier | null;
+  tierLabel: string | null;
+  title: string;
+  /** The caption above the title, such as "Achievement unlocked". */
+  unlockedLabel: string;
+  variant: AchievementToastVariant;
+};
+
+/**
+ * The Galactic Glyphs reveal of a secret achievement, in seconds from the toast's entrance. The
+ * title resolves first, then the description, then a final shimmer passes over the whole toast.
+ */
+const secretRevealTimeline = {
+  descriptionResolveDuration: 1.6,
+  descriptionResolveStart: 1.9,
+  finalShimmerDuration: 0.9,
+  highlightDuration: 0.9,
+  titleResolveDuration: 1.2,
+  titleResolveStart: 0.5,
+} as const;
+
+const secretRevealEnd =
+  secretRevealTimeline.descriptionResolveStart + secretRevealTimeline.descriptionResolveDuration;
+
+/** The confetti burst of each variant; its intensity rises with the tier. */
+const achievementToastConfetti = {
+  bronze: "subtle",
+  gold: "celebration",
+  secret: "celebration",
+  silver: "normal",
+  standard: "subtle",
+} as const satisfies Record<AchievementToastVariant, ConfettiIntensity>;
 
 type AchievementUnlockToastProps = {
-  announcement: AchievementAnnouncement;
+  announcement: AchievementToastContent;
   /** Forces reduced motion on. The system preference always applies, so this can only add to it. */
   reducedMotion?: boolean;
 };
@@ -34,8 +76,8 @@ const secretSheenStyle = (delay: number, duration: number) =>
  * the theme's default surface for standard achievements, the tier's own colors for Bronze, Silver,
  * and Gold, and the iridescent secret treatment with a Galactic Glyphs reveal for secret ones.
  *
- * It only presents what it is given. When to show it, how long it stays, and its sound belong to
- * the announcement queue; the confetti burst plays once when the toast first appears.
+ * It only presents what it is given. When to show it, how long it stays, and any sound belong to
+ * its host; the confetti burst plays once when the toast first appears.
  */
 function AchievementUnlockToast({ announcement, reducedMotion }: AchievementUnlockToastProps) {
   const systemReducedMotion = useReducedMotion();
@@ -52,7 +94,7 @@ function AchievementUnlockToast({ announcement, reducedMotion }: AchievementUnlo
         active={!reduceMotion}
         className="z-0 overflow-visible"
         delay={0.3}
-        intensity={achievementToastPresentation[variant].confetti}
+        intensity={achievementToastConfetti[variant]}
         mode="border-outside"
       />
 
@@ -171,4 +213,5 @@ function AchievementUnlockToast({ announcement, reducedMotion }: AchievementUnlo
   );
 }
 
-export { AchievementUnlockToast };
+export type { AchievementToastContent, AchievementToastVariant };
+export { achievementToastConfetti, AchievementUnlockToast, secretRevealEnd, secretRevealTimeline };

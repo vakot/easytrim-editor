@@ -4,13 +4,13 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { AchievementUnlockToast } from "@easytrim-editor/ui/achievement-unlock-toast";
 import { Button } from "@easytrim-editor/ui/button";
 
 import { ANNOUNCEMENT_GAP_MS } from "../../consts/achievement-toast.consts";
 import { useAchievementAnnouncementQueue } from "../../hooks/useAchievementAnnouncementQueue";
 import { createAchievementAnnouncements } from "../../lib/achievement-announcements.utils";
 import { AchievementToaster } from "../AchievementToaster";
-import { AchievementUnlockToast } from "../AchievementUnlockToast";
 
 /** Real registry achievements, one per variant, so the stories use production copy and icons. */
 const variantAchievements = {

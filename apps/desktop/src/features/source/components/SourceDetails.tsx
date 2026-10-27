@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Fragment } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Separator } from "@/components/ui/separator";
+import { Separator } from "@easytrim-editor/ui/separator";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectSourceMedia, selectSourceSelection } from "@/app/store/slices/source-slice";

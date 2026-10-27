@@ -1,15 +1,14 @@
 import { act, render, screen } from "@testing-library/react";
+import { AudioLines, Crown, Headphones, ImagePlay, PiggyBank } from "lucide-react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { i18n } from "@/i18n/config";
-
 import {
-  achievementToastPresentation,
+  achievementToastConfetti,
+  type AchievementToastContent,
+  type AchievementToastVariant,
+  AchievementUnlockToast,
   secretRevealTimeline,
-} from "../../consts/achievement-toast.consts";
-import { createAchievementAnnouncements } from "../../lib/achievement-announcements.utils";
-import type { AchievementAnnouncement } from "../../types/achievement-toast.types";
-import { AchievementUnlockToast } from "../AchievementUnlockToast";
+} from "../achievement-unlock-toast";
 
 type RevealDriver = {
   onComplete: () => void;
@@ -44,19 +43,60 @@ vi.mock("motion/react", () => ({
   useReducedMotion: () => motion.reduceMotion,
 }));
 
-const t = i18n.t.bind(i18n);
+const unlockedLabel = "Achievement unlocked";
 
-function announce(id: string): AchievementAnnouncement {
-  return createAchievementAnnouncements([id], t)[0]!;
+/** One achievement per variant, as the application would localize them. */
+const announcements = {
+  bronze: {
+    description: "Export animated GIFs",
+    icon: ImagePlay,
+    tier: "bronze",
+    tierLabel: "Bronze",
+    title: "GIF Creator",
+    unlockedLabel,
+    variant: "bronze",
+  },
+  gold: {
+    description: "Save storage by exporting files smaller than their sources",
+    icon: PiggyBank,
+    tier: "gold",
+    tierLabel: "Gold",
+    title: "Storage Saver",
+    unlockedLabel,
+    variant: "gold",
+  },
+  secret: {
+    description: "Encounter every legendary splash message",
+    icon: Crown,
+    tier: null,
+    tierLabel: null,
+    title: "The Chosen One",
+    unlockedLabel,
+    variant: "secret",
+  },
+  silver: {
+    description: "Complete audio-only exports",
+    icon: Headphones,
+    tier: "silver",
+    tierLabel: "Silver",
+    title: "Audio Specialist",
+    unlockedLabel,
+    variant: "silver",
+  },
+  standard: {
+    description: "Apply an audio filter or another media adjustment",
+    icon: AudioLines,
+    tier: null,
+    tierLabel: null,
+    title: "Fine Tuning",
+    unlockedLabel,
+    variant: "standard",
+  },
+} as const satisfies Record<AchievementToastVariant, AchievementToastContent>;
+
+function announce(variant: AchievementToastVariant): AchievementToastContent {
+  return announcements[variant];
 }
-
-const variants = {
-  bronze: "gif-creator-bronze",
-  gold: "storage-saver-gold",
-  secret: "the-chosen-one",
-  silver: "audio-specialist-silver",
-  standard: "fine-tuning",
-} as const;
 
 function particles(container: HTMLElement) {
   return container.querySelectorAll("[data-slot='confetti'] > span");
@@ -67,8 +107,7 @@ function toastRoot(container: HTMLElement) {
 }
 
 describe("AchievementUnlockToast", () => {
-  beforeEach(async () => {
-    await i18n.changeLanguage("en");
+  beforeEach(() => {
     motion.bursts = [];
     motion.drivers = [];
     motion.reduceMotion = false;
@@ -79,7 +118,7 @@ describe("AchievementUnlockToast", () => {
   });
 
   it("shows the achievement icon, name, description, and caption", () => {
-    const announcement = announce(variants.standard);
+    const announcement = announce("standard");
     const { container } = render(<AchievementUnlockToast announcement={announcement} />);
 
     expect(screen.getByText("Achievement unlocked")).toBeInTheDocument();
@@ -94,9 +133,7 @@ describe("AchievementUnlockToast", () => {
     ["silver", "Silver"],
     ["gold", "Gold"],
   ] as const)("shows the %s tier and uses its theme color tokens", (variant, label) => {
-    const { container } = render(
-      <AchievementUnlockToast announcement={announce(variants[variant])} />,
-    );
+    const { container } = render(<AchievementUnlockToast announcement={announce(variant)} />);
 
     const ribbon = container.querySelector<HTMLElement>("[data-slot='achievement-tier-ribbon']");
 
@@ -112,9 +149,7 @@ describe("AchievementUnlockToast", () => {
   });
 
   it("keeps the default themed surface for a standard achievement", () => {
-    const { container } = render(
-      <AchievementUnlockToast announcement={announce(variants.standard)} />,
-    );
+    const { container } = render(<AchievementUnlockToast announcement={announce("standard")} />);
 
     expect(toastRoot(container)).toHaveAttribute("data-variant", "standard");
     expect(toastRoot(container)).toHaveClass("bg-popover");
@@ -130,9 +165,7 @@ describe("AchievementUnlockToast", () => {
     ["gold", 96],
     ["secret", 96],
   ] as const)("bursts confetti for %s with %i particles", (variant, count) => {
-    const { container } = render(
-      <AchievementUnlockToast announcement={announce(variants[variant])} />,
-    );
+    const { container } = render(<AchievementUnlockToast announcement={announce(variant)} />);
 
     expect(particles(container)).toHaveLength(count);
   });
@@ -140,7 +173,7 @@ describe("AchievementUnlockToast", () => {
   it("raises the confetti intensity with the tier", () => {
     const counts = (["standard", "bronze", "silver", "gold", "secret"] as const).map((variant) => {
       const { container, unmount } = render(
-        <AchievementUnlockToast announcement={announce(variants[variant])} />,
+        <AchievementUnlockToast announcement={announce(variant)} />,
       );
 
       const count = particles(container).length;
@@ -149,11 +182,11 @@ describe("AchievementUnlockToast", () => {
     });
 
     expect(counts).toEqual([...counts].sort((a, b) => a - b));
-    expect(achievementToastPresentation.gold.confetti).toBe("celebration");
+    expect(achievementToastConfetti.gold).toBe("celebration");
   });
 
   it("bursts once when it appears and not again on re-render", () => {
-    const announcement = announce(variants.gold);
+    const announcement = announce("gold");
     const { container, rerender } = render(<AchievementUnlockToast announcement={announcement} />);
     rerender(<AchievementUnlockToast announcement={{ ...announcement }} />);
 
@@ -163,7 +196,7 @@ describe("AchievementUnlockToast", () => {
 
   it("cancels its animations when it unmounts", () => {
     const { container, unmount } = render(
-      <AchievementUnlockToast announcement={announce(variants.secret)} />,
+      <AchievementUnlockToast announcement={announce("secret")} />,
     );
 
     const layer = container.querySelector("[data-slot='confetti']")!;
@@ -180,7 +213,7 @@ describe("AchievementUnlockToast", () => {
 
   describe("secret", () => {
     it("shows a red diagonal TOP SECRET ribbon only for secret achievements", () => {
-      const secret = render(<AchievementUnlockToast announcement={announce(variants.secret)} />);
+      const secret = render(<AchievementUnlockToast announcement={announce("secret")} />);
       const ribbon = secret.container.querySelector<HTMLElement>(
         "[data-slot='achievement-secret-ribbon']",
       )!;
@@ -216,7 +249,7 @@ describe("AchievementUnlockToast", () => {
       secret.unmount();
 
       for (const variant of ["standard", "bronze", "silver", "gold"] as const) {
-        const other = render(<AchievementUnlockToast announcement={announce(variants[variant])} />);
+        const other = render(<AchievementUnlockToast announcement={announce(variant)} />);
 
         expect(other.queryByText("TOP SECRET")).toBeNull();
         other.unmount();
@@ -224,7 +257,7 @@ describe("AchievementUnlockToast", () => {
     });
 
     it("reveals the title before the description from Galactic Glyphs", () => {
-      const announcement = announce(variants.secret);
+      const announcement = announce("secret");
       const { container } = render(<AchievementUnlockToast announcement={announcement} />);
       const [title, description] = motion.drivers;
       const states = (slot: string) =>
@@ -265,7 +298,7 @@ describe("AchievementUnlockToast", () => {
     });
 
     it("keeps the real text readable by assistive technology throughout the reveal", () => {
-      const announcement = announce(variants.secret);
+      const announcement = announce("secret");
       const { container } = render(<AchievementUnlockToast announcement={announcement} />);
 
       expect(screen.getByText(announcement.title, { selector: ".sr-only" })).toBeInTheDocument();
@@ -277,7 +310,7 @@ describe("AchievementUnlockToast", () => {
     });
 
     it("restores the exact text once the reveal completes", () => {
-      const announcement = announce(variants.secret);
+      const announcement = announce("secret");
       const { container } = render(<AchievementUnlockToast announcement={announcement} />);
 
       act(() => {
@@ -291,13 +324,11 @@ describe("AchievementUnlockToast", () => {
       expect(text("achievement-unlock-description")).toBe(announcement.description);
     });
 
-    it("restores localized non-Latin text exactly", async () => {
-      await i18n.changeLanguage("ru");
-      const russian = announce(variants.secret);
+    it("restores localized non-Latin text exactly", () => {
       const { container } = render(
         <AchievementUnlockToast
           announcement={{
-            ...russian,
+            ...announce("secret"),
             description: "日本語のテキスト 🎬 é",
             title: "Мастер экспорта",
           }}
@@ -319,9 +350,7 @@ describe("AchievementUnlockToast", () => {
     });
 
     it("uses the shared secret styling with an iridescent icon stroke", () => {
-      const { container } = render(
-        <AchievementUnlockToast announcement={announce(variants.secret)} />,
-      );
+      const { container } = render(<AchievementUnlockToast announcement={announce("secret")} />);
 
       expect(toastRoot(container)).toHaveAttribute("data-secret-state", "unlocked");
       expect(toastRoot(container).style.getPropertyValue("--secret-icon-stroke")).toMatch(
@@ -332,7 +361,7 @@ describe("AchievementUnlockToast", () => {
   });
 
   it("does not run any text reveal for non-secret achievements", () => {
-    render(<AchievementUnlockToast announcement={announce(variants.gold)} />);
+    render(<AchievementUnlockToast announcement={announce("gold")} />);
 
     expect(motion.drivers).toHaveLength(0);
   });
@@ -340,7 +369,7 @@ describe("AchievementUnlockToast", () => {
   describe("reduced motion", () => {
     it("still shows the announcement but skips confetti, the reveal, and css animation", () => {
       motion.reduceMotion = true;
-      const announcement = announce(variants.secret);
+      const announcement = announce("secret");
       const { container } = render(<AchievementUnlockToast announcement={announcement} />);
 
       expect(toastRoot(container)).toHaveAttribute("data-reduced-motion", "true");
@@ -355,7 +384,7 @@ describe("AchievementUnlockToast", () => {
 
     it("lets an explicit setting force reduced motion but never overrides the system preference", () => {
       const forced = render(
-        <AchievementUnlockToast announcement={announce(variants.gold)} reducedMotion />,
+        <AchievementUnlockToast announcement={announce("gold")} reducedMotion />,
       );
 
       expect(toastRoot(forced.container)).toHaveAttribute("data-reduced-motion", "true");
@@ -364,7 +393,7 @@ describe("AchievementUnlockToast", () => {
 
       motion.reduceMotion = true;
       const system = render(
-        <AchievementUnlockToast announcement={announce(variants.gold)} reducedMotion={false} />,
+        <AchievementUnlockToast announcement={announce("gold")} reducedMotion={false} />,
       );
 
       expect(toastRoot(system.container)).toHaveAttribute("data-reduced-motion", "true");
@@ -377,9 +406,7 @@ describe("AchievementUnlockToast", () => {
       "uses only scalable units at a %s root font size",
       (rootSize) => {
         document.documentElement.style.fontSize = rootSize;
-        const { container } = render(
-          <AchievementUnlockToast announcement={announce(variants.secret)} />,
-        );
+        const { container } = render(<AchievementUnlockToast announcement={announce("secret")} />);
 
         const everything = [...container.querySelectorAll<HTMLElement>("*")];
         const inline = everything.map((element) => element.getAttribute("style") ?? "").join(" ");

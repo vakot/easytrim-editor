@@ -1,8 +1,11 @@
 import {
-  achievementToastPresentation,
-  ANNOUNCEMENT_GAP_MS,
   secretRevealEnd,
   secretRevealTimeline,
+} from "@easytrim-editor/ui/achievement-unlock-toast";
+
+import {
+  achievementToastPresentation,
+  ANNOUNCEMENT_GAP_MS,
 } from "../consts/achievement-toast.consts";
 import type { AchievementAnnouncement } from "../types/achievement-toast.types";
 

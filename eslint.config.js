@@ -229,6 +229,35 @@ export default defineConfig(
     },
   },
   {
+    files: ["apps/landing/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/*", "@easytrim-editor/desktop", "@easytrim-editor/desktop/**"],
+              message:
+                "The website must not depend on desktop application code; share it through @easytrim-editor/ui.",
+            },
+            {
+              group: [
+                "@reduxjs/*",
+                "@tauri-apps/*",
+                "i18next",
+                "react-i18next",
+                "react-redux",
+                "redux-persist",
+              ],
+              message:
+                "The website is a static page without desktop runtime, state, or localization.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ["apps/desktop/src/domain/**/*.{ts,tsx}"],
     rules: {
       "no-restricted-imports": [
@@ -267,6 +296,8 @@ export default defineConfig(
     files: [
       "apps/desktop/src/**/*.{ts,tsx}",
       "apps/desktop/vite.config.ts",
+      "apps/landing/src/**/*.{ts,tsx}",
+      "apps/landing/vite.config.ts",
       "packages/ui/**/*.{ts,tsx}",
     ],
     languageOptions: {
@@ -315,7 +346,7 @@ export default defineConfig(
     },
   },
   {
-    files: ["packages/ui/src/**/*.{ts,tsx}"],
+    files: ["apps/landing/src/**/*.{ts,tsx}", "packages/ui/src/**/*.{ts,tsx}"],
     plugins: {
       tailwindcss,
     },

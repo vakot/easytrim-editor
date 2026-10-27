@@ -18,12 +18,14 @@ pnpm install --frozen-lockfile
 pnpm dev                 # Tauri app in Vite dev mode
 pnpm build               # production frontend + native executable (--no-bundle)
 pnpm build:web           # frontend only; no Tauri/FFmpeg access
+pnpm dev:landing | build:landing | preview:landing   # static product website (apps/landing)
 pnpm check               # full gate: format, lint, knip, typecheck, tests, storybook, build
 pnpm format:check | lint | knip | typecheck | typecheck:storybook | test | test:release
 pnpm i18n:check          # translation validation (also part of `pnpm lint`)
 pnpm storybook
 pnpm --filter @easytrim-editor/desktop exec vitest run <path>   # single test file
 pnpm --filter @easytrim-editor/ui exec vitest run <path>        # single shared-UI test file
+pnpm --filter @easytrim-editor/landing exec vitest run <path>   # single landing test file
 ```
 
 Native checks (workspace `Cargo.toml` at root, crate `easytrim-editor-desktop`):
@@ -41,7 +43,7 @@ the package, Cargo, and Tauri versions in sync.
 ## Layout
 
 ```text
-apps/desktop/            the only app (coupled React + Tauri)
+apps/desktop/            the desktop app (coupled React + Tauri)
   src/                   frontend (Vite, Vitest + jsdom, Storybook)
     app/                 composition: layout, providers, dialogs, commands, store/
     features/            source, preview, timeline, audio, export, playback, media, activity, changelog
@@ -51,8 +53,11 @@ apps/desktop/            the only app (coupled React + Tauri)
     i18n/                locales (en canonical, ru), schema, validation
     test/                shared test setup, factories, mocks
   src-tauri/             Rust crate: commands/ -> application/ -> domain/ media/ process/, state.rs
-packages/ui/             @easytrim-editor/ui: source-only shared primitives, effects, tokens, cn
-                         (consumed via package `exports` subpaths; no desktop/Tauri/Redux/i18n)
+apps/landing/            static product website for GitHub Pages (Vite + React, base /easytrim-editor/;
+                         deployed by .github/workflows/pages.yml; imports only @easytrim-editor/ui)
+packages/ui/             @easytrim-editor/ui: source-only shared primitives, effects, tokens, cn, and
+                         stateless achievement card/toast (consumed via package `exports` subpaths;
+                         no desktop/Tauri/Redux/i18n)
 scripts/                 dev, release, versioning, changelog, i18n tooling (tests in scripts/__tests__)
 docs/                    architecture, state-management, runtime-security, code-conventions, etc.
 ```

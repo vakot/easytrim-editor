@@ -1,9 +1,8 @@
 import type { TFunction } from "i18next";
 
-import type {
-  AchievementAnnouncement,
-  AchievementToastVariant,
-} from "../types/achievement-toast.types";
+import type { AchievementToastVariant } from "@easytrim-editor/ui/achievement-unlock-toast";
+
+import type { AchievementAnnouncement } from "../types/achievement-toast.types";
 import type { UnlockableAchievement } from "../types/achievements.types";
 
 import { getAchievementTierLabel, getUnlockableAchievement } from "./achievements.utils";

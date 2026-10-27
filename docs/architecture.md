@@ -6,8 +6,9 @@ EasyTrim. It is intentionally about responsibilities and boundaries, not an inve
 ## Product layers
 
 The repository is a pnpm workspace. `apps/desktop` owns the coupled React frontend and Tauri
-native application. `packages/ui` (`@easytrim-editor/ui`) owns browser-safe presentational
-primitives, visual effects, and design tokens shared with other web surfaces; see
+native application. `apps/landing` is the static product website published to GitHub Pages; it
+has no router, store, or native runtime. `packages/ui` (`@easytrim-editor/ui`) owns browser-safe
+presentational primitives, visual effects, and design tokens shared by both applications; see
 [Shared UI package](#shared-ui-package). Root scripts provide shared tooling and deterministic
 automation. Add a workspace package only when at least two consumers need a stable shared contract.
 
@@ -82,10 +83,15 @@ middleware, thunks, services, or providers), not in visual components.
 `@easytrim-editor/ui` is a source-only package: consumers compile its TypeScript and CSS with their
 own Vite and Tailwind build, so it has no build step or `dist` output.
 
-- **Boundary.** It contains generic, browser-safe presentation only: primitives such as `Button`,
-  `Card`, `ScrollArea`, and `Tooltip`; effects such as `Confetti` and `TextReveal`; brand icons;
-  the `Timestamp` primitive with its date-time formatting; the `cn` class-name helper; and the
-  semantic design tokens and base styles. It never imports desktop code, Tauri, Redux, i18n, or
+- **Boundary.** It contains browser-safe presentation only: primitives such as `Badge`, `Button`,
+  `Card`, `Item`, `Progress`, `ScrollArea`, `Separator`, and `Tooltip`; effects such as `Confetti`
+  and `TextReveal`; brand icons; the `Timestamp` primitive with its date-time formatting; the `cn`
+  class-name helper; the color math and the theme utilities (light, dark, or system resolution,
+  the primary color presets and palette, applying both to the document root, and the single 300ms
+  crossfade both applications use for a theme change); the stateless
+  achievement presentation (`AchievementCard`,
+  `AchievementUnlockToast`, tier styles, and Galactic Glyphs) that the website showcases; and the
+  semantic design tokens, including the achievement tier and secret palettes, and base styles. It never imports desktop code, Tauri, Redux, i18n, or
   native adapters; ESLint enforces this. Values that come from the application, such as the locale
   or translated fallback text, arrive as props.
 - **Public surface.** Consumers import only the subpaths listed in the package `exports`, such as
@@ -95,10 +101,12 @@ own Vite and Tailwind build, so it has no build step or `dist` output.
   Tailwind directly. That stylesheet brings Tailwind, the shared animation and variant layers, the
   semantic token contract, the Inter font, and the base layer, and registers the package sources
   for class scanning. Consumer stylesheets add only consumer-specific tokens, such as the desktop
-  achievement, sidebar, and preview colors.
-- **What stays in desktop.** Product-bound UI stays with its owner even when it reuses shared
-  primitives: achievement cards and toasts, feature containers, and Redux-connected controls.
-  Primitives that depend on desktop-only concerns, such as i18n strings or Tauri adapters, stay in
+  sidebar and preview colors.
+- **What stays in desktop.** Feature containers and Redux-connected controls stay with their owner
+  even when they render shared presentation: `AchievementStandaloneItem` reads achievement records
+  and i18n and renders `AchievementCard`, and the announcement queue decides when an
+  `AchievementUnlockToast` appears, how long it stays, and which sound plays. Primitives that depend
+  on desktop-only concerns, such as i18n strings or Tauri adapters, stay in
   `apps/desktop/src/components` until those concerns are lifted into props. A thin desktop binding
   may adapt a shared primitive to application context; for example, `RelativeTimestamp` supplies
   the active language to `Timestamp`.
@@ -106,8 +114,10 @@ own Vite and Tailwind build, so it has no build step or `dist` output.
 To migrate another primitive, move it with `git mv` together with its tests and stories into
 `packages/ui/src` (components under `components/`, helpers under `lib/` or `hooks/`), switch its
 internal imports to relative paths, add one `exports` entry, and update consumers to the new
-subpath. Do not leave a copy or a re-export behind in desktop. The package runs its own Vitest
-suite and typecheck; its stories render in the desktop Storybook with the application theme.
+subpath. Do not leave a copy or a re-export behind in desktop. When a component mixes presentation
+with application state, move the presentation and leave a desktop container that passes resolved,
+localized values as props. The package runs its own Vitest suite and typecheck; its stories render
+in the desktop Storybook with the application theme.
 
 ## Native ownership
 

@@ -1,4 +1,5 @@
-import type { AchievementTier } from "../types/achievements.types";
+/** A milestone tier, in ascending order of the effort it takes. */
+type AchievementTier = "bronze" | "gold" | "silver";
 
 type AchievementTierClassNames = {
   /** Tier-colored foreground, such as a notification icon. */
@@ -53,4 +54,5 @@ const achievementTierClassNames = {
   },
 } as const satisfies Record<AchievementTier, AchievementTierClassNames>;
 
+export type { AchievementTier };
 export { achievementTierClassNames };

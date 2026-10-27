@@ -1,17 +1,17 @@
 import { CircleCheckBig, Lock, Medal } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { AchievementNewPing } from "@easytrim-editor/ui/achievement-new-ping";
+import { achievementTierClassNames } from "@easytrim-editor/ui/achievement-tier-styles";
+import { Badge } from "@easytrim-editor/ui/badge";
 import { cn } from "@easytrim-editor/ui/class-names";
 import { formatDateOnly } from "@easytrim-editor/ui/date-time";
-
-import { Badge } from "@/components/ui/badge";
-import { Item, ItemContent, ItemDescription, ItemMedia, ItemTitle } from "@/components/ui/item";
+import { Item, ItemContent, ItemDescription, ItemMedia, ItemTitle } from "@easytrim-editor/ui/item";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectAchievementRecords } from "@/app/store/slices/achievements-slice";
 import { selectUsageStatistics } from "@/app/store/slices/usage-statistics-slice";
 
-import { achievementTierClassNames } from "../../../consts/achievement-tier-styles.consts";
 import {
   achievementMetricUnits,
   type AchievementTierStatus,
@@ -24,7 +24,6 @@ import type { AchievementSeriesDefinition } from "../../../types/achievements.ty
 import { useAchievementsViewedAt } from "../contexts/AchievementsViewContext";
 import { formatAchievementValue } from "../lib/achievements-format.utils";
 
-import { AchievementNewPing } from "./AchievementNewPing";
 import { AchievementProgress } from "./AchievementProgress";
 
 /** One card for a milestone series: its highest tier, progress to the next, and every tier. */

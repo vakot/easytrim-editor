@@ -3,8 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@easytrim-editor/ui/button";
 import { cn } from "@easytrim-editor/ui/class-names";
-
-import { Progress } from "@/components/ui/progress";
+import { Progress } from "@easytrim-editor/ui/progress";
 
 import {
   type LanguageOption,

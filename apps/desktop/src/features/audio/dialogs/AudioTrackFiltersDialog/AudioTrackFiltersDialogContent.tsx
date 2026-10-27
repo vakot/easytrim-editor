@@ -3,10 +3,10 @@ import { Suspense, useMemo, useReducer } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@easytrim-editor/ui/button";
+import { Separator } from "@easytrim-editor/ui/separator";
 
 import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia } from "@/components/ui/empty";
-import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
 
 import { Library, LibraryContent, LibraryPage } from "@/components/library";

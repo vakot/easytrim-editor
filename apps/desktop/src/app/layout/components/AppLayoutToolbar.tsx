@@ -1,9 +1,8 @@
 import { Button } from "@easytrim-editor/ui/button";
 import { cn } from "@easytrim-editor/ui/class-names";
 import { Ping } from "@easytrim-editor/ui/ping";
+import { Separator } from "@easytrim-editor/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@easytrim-editor/ui/tooltip";
-
-import { Separator } from "@/components/ui/separator";
 
 import type { ApplicationCommandId } from "@/app/commands";
 import { ApplicationCommandIcon } from "@/app/components/ApplicationCommandMenuItem";

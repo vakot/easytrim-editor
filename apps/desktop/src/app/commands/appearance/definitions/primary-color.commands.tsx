@@ -1,8 +1,9 @@
 import { useTranslation } from "react-i18next";
 
+import { PRIMARY_COLOR_PRESETS } from "@easytrim-editor/ui/theme";
+
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { primaryColorChanged } from "@/app/store/slices/preferences-slice";
-import { PRIMARY_COLOR_PRESETS } from "@/app/theme/theme";
 import { ColorSample } from "@/components/color";
 
 function getPrimaryColorCommandId(id: (typeof PRIMARY_COLOR_PRESETS)[number]["id"]) {

@@ -1,6 +1,6 @@
 import { createContext } from "react";
 
-import type { PrimaryColor, ResolvedTheme } from "./theme";
+import type { PrimaryColor, ResolvedTheme } from "@easytrim-editor/ui/theme";
 
 interface ThemeContextValue {
   getPrimaryColor: () => PrimaryColor;

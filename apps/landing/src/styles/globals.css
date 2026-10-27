@@ -1,0 +1,59 @@
+@import "@easytrim-editor/ui/globals.css";
+
+/* Sections offset their own anchor targets with `scroll-mt-16` to clear the sticky header. A root
+   scroll padding would also apply to focus inside that header and scroll the page on every click. */
+@layer base {
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+}
+
+/* A soft amber light behind the hero screenshot, drawn from the theme's primary color. */
+.hero-glow {
+  background:
+    radial-gradient(
+      50% 60% at 50% 40%,
+      color-mix(in srgb, var(--primary) 22%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      30% 40% at 20% 70%,
+      color-mix(in srgb, var(--primary) 10%, transparent),
+      transparent 70%
+    );
+  filter: blur(2.5rem);
+}
+
+/* A faint grid that fades out toward the edges of the hero. */
+.hero-grid {
+  background-image:
+    linear-gradient(
+      to right,
+      color-mix(in srgb, var(--border) 50%, transparent) 0.0625rem,
+      transparent 0.0625rem
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--border) 50%, transparent) 0.0625rem,
+      transparent 0.0625rem
+    );
+  background-size: 3rem 3rem;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, black 30%, transparent 75%);
+}
+
+/* The amber edge of highlighted panels, such as the final download call to action. */
+.amber-edge {
+  background:
+    linear-gradient(var(--card), var(--card)) padding-box,
+    linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--primary) 70%, transparent),
+        var(--border) 40%,
+        var(--border) 60%,
+        color-mix(in srgb, var(--primary) 50%, transparent)
+      )
+      border-box;
+  border: 0.0625rem solid transparent;
+}

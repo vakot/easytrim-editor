@@ -1,4 +1,4 @@
-import styles from "./AchievementSecret.module.css";
+import styles from "./achievement-secret.module.css";
 
 /**
  * Defines the iridescent gradient that secret achievement icons use as their stroke. Pair it with

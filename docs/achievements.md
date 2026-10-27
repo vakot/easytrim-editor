@@ -200,7 +200,9 @@ definition: a series tier is `bronze`, `silver`, or `gold`, a secret standalone 
 | `secret`   | Iridescent border, glow, shimmer, glyph reveal | celebration | secret   |
 
 Tier colors come from `achievementTierClassNames` and the secret palette from the
-`--achievement-secret-*` tokens, so toasts and cards stay in step. The shared `Confetti` component
+`--achievement-secret-*` tokens, so toasts and cards stay in step. The toast, the card, their tier
+styles, and the variant confetti intensities live in `@easytrim-editor/ui`, which the website
+also uses; the desktop keeps when and how long a toast shows and its sound. The shared `Confetti` component
 bursts behind the toast card, extending beyond its edges after the entrance fade has finished.
 Achievement toasts use a dedicated top-center host at a `2.25rem` offset, separate from the
 default top-right activity toasts.

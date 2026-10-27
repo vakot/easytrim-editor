@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { BookOpen, Palette, Sparkles } from "lucide-react";
 import { useState } from "react";
 
-import { Separator } from "@/components/ui/separator";
+import { Separator } from "@easytrim-editor/ui/separator";
 
 import {
   Library,

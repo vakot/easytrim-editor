@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- Switching the theme now fades the whole window smoothly instead of changing colors at different speeds.
+- The waveform display mode is now chosen from an audio track's actions or context menu instead of a dropdown on the waveform.
+
 ### Fixed
 
 - Fixed source files failing to move to Trash on Windows after audio playback, including automatic deletion after rendering.

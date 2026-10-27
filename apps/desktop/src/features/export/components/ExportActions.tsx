@@ -2,11 +2,11 @@ import { List, MoreHorizontal, Scissors, Settings2 } from "lucide-react";
 import type { ComponentProps } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Badge } from "@easytrim-editor/ui/badge";
 import { Button } from "@easytrim-editor/ui/button";
 import { cn } from "@easytrim-editor/ui/class-names";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@easytrim-editor/ui/tooltip";
 
-import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,

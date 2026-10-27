@@ -1,5 +1,7 @@
 import type { TFunction } from "i18next";
 
+import type { AchievementTier } from "@easytrim-editor/ui/achievement-tier-styles";
+
 import type { AchievementRecords } from "@/domain/achievement-records";
 import {
   getCompletedExports,
@@ -13,7 +15,6 @@ import type {
   AchievementCondition,
   AchievementMetric,
   AchievementSeriesDefinition,
-  AchievementTier,
   StandaloneAchievementDefinition,
   UnlockableAchievement,
 } from "../types/achievements.types";

@@ -39,6 +39,11 @@
         "src/**/*.spec.tsx"
       ]
     },
+    "apps/landing": {
+      "entry": ["src/main.tsx!"],
+      "project": ["src/**/*.ts!", "src/**/*.tsx!"],
+      "ignore": ["src/test/**", "src/**/__tests__/**"]
+    },
     "packages/ui": {
       "ignoreDependencies": ["@fontsource/inter", "shadcn", "tailwindcss", "tw-animate-css"],
       "project": ["src/**/*.ts!", "src/**/*.tsx!"],

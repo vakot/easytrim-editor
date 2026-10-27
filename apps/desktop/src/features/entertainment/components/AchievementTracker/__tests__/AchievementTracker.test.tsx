@@ -21,7 +21,10 @@ vi.mock("@/lib/tauri/achievements", () => ({
 }));
 vi.mock("@/lib/tauri/statistics", () => ({ getUsageStatistics: mocks.getUsageStatistics }));
 vi.mock("sonner", () => ({ toast: { custom: mocks.toast, dismiss: mocks.toastDismiss } }));
-vi.mock("../../AchievementUnlockToast", () => ({ AchievementUnlockToast: () => null }));
+vi.mock("@easytrim-editor/ui/achievement-unlock-toast", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@easytrim-editor/ui/achievement-unlock-toast")>()),
+  AchievementUnlockToast: () => null,
+}));
 
 import { achievementAnnouncementQueued } from "@/app/store/slices/achievements-slice";
 import { editingInstanceExportCompleted } from "@/app/store/slices/editing-instances-slice";

@@ -17,9 +17,9 @@ import { toast } from "sonner";
 
 import { Button } from "@easytrim-editor/ui/button";
 import { cn } from "@easytrim-editor/ui/class-names";
+import { Separator } from "@easytrim-editor/ui/separator";
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";

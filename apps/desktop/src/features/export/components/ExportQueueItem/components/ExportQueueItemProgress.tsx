@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 
-import { Progress } from "@/components/ui/progress";
+import { Progress } from "@easytrim-editor/ui/progress";
 
 import { getExportMetricValues } from "@/domain/export-metrics";
 

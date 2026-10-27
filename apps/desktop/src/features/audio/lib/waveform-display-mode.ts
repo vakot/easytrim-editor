@@ -19,21 +19,5 @@ function waveformDisplayModeLabel(mode: WaveformDisplayMode, t: TFunction): stri
   }
 }
 
-function waveformDisplayModeDescription(mode: WaveformDisplayMode, t: TFunction): string {
-  switch (mode) {
-    case "peak":
-      return t("audio.waveform.displayMode.peakDescription");
-    case "rms":
-      return t("audio.waveform.displayMode.rmsDescription");
-    case "stereo":
-      return t("audio.waveform.displayMode.stereoDescription");
-  }
-}
-
-export {
-  isWaveformDisplayMode,
-  WAVEFORM_DISPLAY_MODES,
-  waveformDisplayModeDescription,
-  waveformDisplayModeLabel,
-};
+export { isWaveformDisplayMode, WAVEFORM_DISPLAY_MODES, waveformDisplayModeLabel };
 export type { WaveformDisplayMode };

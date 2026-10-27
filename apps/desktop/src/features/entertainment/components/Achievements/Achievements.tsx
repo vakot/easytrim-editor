@@ -4,10 +4,10 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { cn } from "@easytrim-editor/ui/class-names";
+import { Item, ItemContent, ItemDescription, ItemMedia } from "@easytrim-editor/ui/item";
+import { Progress } from "@easytrim-editor/ui/progress";
 import { ScrollArea } from "@easytrim-editor/ui/scroll-area";
 
-import { Item, ItemContent, ItemDescription, ItemMedia } from "@/components/ui/item";
-import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";

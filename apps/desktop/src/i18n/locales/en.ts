@@ -459,11 +459,8 @@ export const en = {
     waveform: {
       displayMode: {
         label: "Waveform display",
-        peakDescription: "transient amplitude",
         peakShort: "Peak",
-        rmsDescription: "average signal energy",
         rmsShort: "RMS",
-        stereoDescription: "left and right activity",
         stereoShort: "Stereo",
       },
       outdated: "Waveform outdated",

@@ -16,6 +16,12 @@
   "useTabs": false,
   "overrides": [
     {
+      "files": "apps/landing/**",
+      "options": {
+        "tailwindStylesheet": "./apps/landing/src/styles/globals.css"
+      }
+    },
+    {
       "files": "packages/ui/**",
       "options": {
         "tailwindStylesheet": "./packages/ui/src/styles/globals.css"

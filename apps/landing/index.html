@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f6f5f2" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0c0c0e" media="(prefers-color-scheme: dark)" />
+    <script>
+      // Applies the saved theme before the first paint, as applyTheme does once the page loads
+      // (see src/hooks/useLandingTheme.ts): dark when resolved dark, light only when chosen.
+      (() => {
+        let theme = "system";
+        try {
+          theme = localStorage.getItem("easytrim-landing-theme") ?? "system";
+        } catch {}
+        const dark =
+          theme === "dark" ||
+          (theme !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+        const root = document.documentElement;
+        root.classList.toggle("light", theme === "light");
+        root.classList.toggle("dark", dark);
+        root.dataset.theme = dark ? "dark" : "light";
+        root.style.colorScheme = dark ? "dark" : "light";
+      })();
+    </script>
+    <title>EasyTrim Editor — precise video trimming for your desktop</title>
+    <meta
+      name="description"
+      content="EasyTrim Editor is a fast, lightweight desktop video trimmer. Trim, crop, and loop a segment, mix its audio tracks, and export with FFmpeg — no project files."
+    />
+    <link rel="icon" type="image/svg+xml" href="/logo-symbol.svg" />
+    <link rel="canonical" href="https://vakot.github.io/easytrim-editor/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="EasyTrim Editor" />
+    <meta property="og:title" content="EasyTrim Editor" />
+    <meta
+      property="og:description"
+      content="Precise video trimming for Windows, macOS, and Linux — no project files."
+    />
+    <meta property="og:url" content="https://vakot.github.io/easytrim-editor/" />
+    <meta property="og:image" content="https://vakot.github.io/easytrim-editor/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

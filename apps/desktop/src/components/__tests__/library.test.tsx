@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { describe, expect, it } from "vitest";
 
-import { Separator } from "@/components/ui/separator";
+import { Separator } from "@easytrim-editor/ui/separator";
 
 import {
   Library,

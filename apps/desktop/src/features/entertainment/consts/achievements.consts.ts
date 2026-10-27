@@ -18,11 +18,9 @@ import {
   Trophy,
 } from "lucide-react";
 
-import type {
-  AchievementCategory,
-  AchievementCollectionEntry,
-  AchievementTier,
-} from "../types/achievements.types";
+import type { AchievementTier } from "@easytrim-editor/ui/achievement-tier-styles";
+
+import type { AchievementCategory, AchievementCollectionEntry } from "../types/achievements.types";
 
 import { splashMessagesLegendary } from "./splash-messages.consts";
 
