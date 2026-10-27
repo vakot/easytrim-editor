@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { FolderCode, MoveUpRight } from "lucide-react";
 
-import { Button } from "../button";
+import { Button } from "@easytrim-editor/ui/button";
+
 import {
   Empty,
   EmptyContent,

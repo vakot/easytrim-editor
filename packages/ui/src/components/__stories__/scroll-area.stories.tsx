@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { Card } from "@/components/ui/card";
-
+import { Card } from "../card";
 import { ScrollArea } from "../scroll-area";
 
 const meta = {

@@ -5,10 +5,10 @@ import { Dialog as DialogPrimitive } from "radix-ui";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@easytrim-editor/ui/button";
+import { cn } from "@easytrim-editor/ui/class-names";
 
 import { keepMovedFocusOnClose } from "@/components/close-auto-focus";
-import { cn } from "@/lib/class-names.utils";
 
 const createDialogScope = DialogPrimitive.createDialogScope;
 

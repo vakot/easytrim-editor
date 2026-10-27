@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-import { cn } from "@/lib/class-names.utils";
+import { cn } from "@easytrim-editor/ui/class-names";
 
 function Textarea({ className, ...props }: React.ComponentProps<"textarea">) {
   return (

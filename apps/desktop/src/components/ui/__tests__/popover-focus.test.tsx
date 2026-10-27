@@ -2,7 +2,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 
-import { Button } from "../button";
+import { Button } from "@easytrim-editor/ui/button";
+
 import { Input } from "../input";
 import { Popover, PopoverContent, PopoverTrigger } from "../popover";
 

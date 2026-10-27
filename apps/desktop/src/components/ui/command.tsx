@@ -5,6 +5,9 @@ import { Command as CommandPrimitive } from "cmdk";
 import { CheckIcon } from "lucide-react";
 import * as React from "react";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+import { ScrollArea } from "@easytrim-editor/ui/scroll-area";
+
 import {
   Dialog,
   DialogContent,
@@ -14,9 +17,6 @@ import {
 } from "@/components/ui/dialog";
 import { InputGroup } from "@/components/ui/input-group";
 import { MenuIcon, menuItemVariants } from "@/components/ui/menu";
-import { ScrollArea } from "@/components/ui/scroll-area";
-
-import { cn } from "@/lib/class-names.utils";
 
 const commandItemVariants = cva(
   "group/command-item px-8 in-data-[slot=dialog-content]:rounded-lg!",

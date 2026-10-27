@@ -9,7 +9,9 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@easytrim-editor/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@easytrim-editor/ui/tooltip";
+
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -23,7 +25,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import {
   ApplicationCommandIcon,

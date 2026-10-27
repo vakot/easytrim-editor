@@ -1,10 +1,10 @@
 "use client";
 
-import { MenuIcon } from "@/components/ui/menu";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@easytrim-editor/ui/class-names";
+import { ScrollArea } from "@easytrim-editor/ui/scroll-area";
 
-import { cn } from "@/lib/class-names.utils";
+import { MenuIcon } from "@/components/ui/menu";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 function Library({ className, ...props }: React.ComponentProps<typeof Tabs>) {
   return (

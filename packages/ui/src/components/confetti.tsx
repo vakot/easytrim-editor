@@ -3,7 +3,7 @@
 import { animate, useReducedMotion } from "motion/react";
 import { useEffect, useRef } from "react";
 
-import { cn } from "@/lib/class-names.utils";
+import { cn } from "../lib/class-names.utils";
 
 type ConfettiMode = "center" | "border-outside" | "border-inside";
 

@@ -4,7 +4,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@easytrim-editor/ui/button";
 
 import { ANNOUNCEMENT_GAP_MS } from "../../consts/achievement-toast.consts";
 import { useAchievementAnnouncementQueue } from "../../hooks/useAchievementAnnouncementQueue";

@@ -3,6 +3,8 @@
 import { SearchIcon } from "lucide-react";
 import * as React from "react";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import {
   Command,
   CommandEmpty,
@@ -16,8 +18,6 @@ import {
 import { InputGroupAddon } from "@/components/ui/input-group";
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Slot } from "@/components/ui/slot";
-
-import { cn } from "@/lib/class-names.utils";
 
 function Combobox({
   children,

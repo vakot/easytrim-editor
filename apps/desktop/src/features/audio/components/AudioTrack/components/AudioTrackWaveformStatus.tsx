@@ -2,12 +2,12 @@ import { LoaderCircle, TriangleAlert } from "lucide-react";
 import { type ReactNode, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from "@easytrim-editor/ui/button";
+import { cn } from "@easytrim-editor/ui/class-names";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@easytrim-editor/ui/tooltip";
 
 import type { AudioTrackState } from "@/app/store/slices/audio-slice";
 import { localizeAppError } from "@/i18n/app-errors";
-import { cn } from "@/lib/class-names.utils";
 
 import { useWaveformPrepare } from "../../../hooks/useWaveformPreparation";
 

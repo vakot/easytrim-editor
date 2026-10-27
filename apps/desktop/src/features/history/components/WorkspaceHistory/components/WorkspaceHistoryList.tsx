@@ -1,7 +1,7 @@
 import { forwardRef, useState } from "react";
 import { type ListProps, Virtuoso } from "react-virtuoso";
 
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea } from "@easytrim-editor/ui/scroll-area";
 
 import type { WorkspaceHistoryRow } from "../types";
 

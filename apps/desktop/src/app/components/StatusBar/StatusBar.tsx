@@ -2,7 +2,9 @@ import { CircleAlert, Download } from "lucide-react";
 import { Fragment, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@easytrim-editor/ui/button";
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
@@ -20,7 +22,6 @@ import {
   getExportMetricValues,
 } from "@/domain/export-metrics";
 import { getCurrentVersion } from "@/lib/app-version.utils";
-import { cn } from "@/lib/class-names.utils";
 import { requestWindowShutdown } from "@/lib/tauri/window";
 
 function splitFilePath(path: string) {

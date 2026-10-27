@@ -3,7 +3,10 @@ import { motion, useReducedMotion } from "motion/react";
 import { Fragment, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@easytrim-editor/ui/button";
+import { cn } from "@easytrim-editor/ui/class-names";
+import { Confetti } from "@easytrim-editor/ui/confetti";
+
 import { Kbd, KbdGroup, KbdSeparator } from "@/components/ui/kbd";
 
 import {
@@ -16,13 +19,11 @@ import { getShortcutDisplayKeys } from "@/app/commands/core/application-command.
 import { SupportLink } from "@/app/components/SupportLink";
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectAchievementRecords } from "@/app/store/slices/achievements-slice";
-import { Confetti } from "@/components/confetti";
 import {
   AchievementsCategoryContent,
   SplashMessages,
   useHasIncompleteAchievements,
 } from "@/features/entertainment";
-import { cn } from "@/lib/class-names.utils";
 
 import { confirmOnboardingCompleted, isOnboardingCompleted } from "./onboarding-completion";
 import styles from "./VideoPreviewEmpty.module.css";

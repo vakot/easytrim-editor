@@ -1,13 +1,14 @@
 import { FileVideo, Play } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import { Badge } from "@/components/ui/badge";
 import { Spinner } from "@/components/ui/spinner";
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectImportedSourceThumbnail } from "@/app/store/slices/preview-slice";
 import type { EditorSnapshot } from "@/domain/editor-snapshot";
-import { cn } from "@/lib/class-names.utils";
 
 import { formatDuration } from "../../../lib/media-formatters.utils";
 import { useSourceCardData } from "../hooks/useSourceCardData";

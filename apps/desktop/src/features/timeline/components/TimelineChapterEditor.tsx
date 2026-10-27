@@ -1,9 +1,10 @@
 import { useTranslation } from "react-i18next";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { chapterUpdated, selectChapters } from "@/app/store/slices/chapters-slice";
 import { selectFrameIndex, selectSourceMedia } from "@/app/store/slices/source-slice";
-import { cn } from "@/lib/class-names.utils";
 
 import { useChapterEditing } from "../contexts/chapter-editing-context";
 import { ChapterDialog } from "../dialogs/ChapterDialog";

@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { Provider } from "react-redux";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { TooltipProvider } from "@easytrim-editor/ui/tooltip";
 
 import { sourceReady, sourceSelected } from "@/app/store/actions/source-actions";
 import {

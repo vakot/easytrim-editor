@@ -1,11 +1,12 @@
 import { t } from "i18next";
 import { Info } from "lucide-react";
 
+import { ScrollArea } from "@easytrim-editor/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@easytrim-editor/ui/tooltip";
+
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectAudioTracks } from "@/app/store/slices/audio-slice";

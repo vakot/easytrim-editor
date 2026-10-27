@@ -2,7 +2,9 @@ import { AudioLines, ChevronRight, MoreVertical, Pencil, SlidersHorizontal } fro
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@easytrim-editor/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@easytrim-editor/ui/tooltip";
+
 import {
   ContextMenuCheckboxItem,
   ContextMenuContent,
@@ -32,7 +34,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Slot } from "@/components/ui/slot";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { AudioTrackFiltersDialogTrigger } from "../../../dialogs/AudioTrackFiltersDialog";
 import { AudioTrackMetadataDialogTrigger } from "../../../dialogs/AudioTrackMetadataDialog";

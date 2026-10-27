@@ -27,7 +27,7 @@
         "src/app/store/integration/workspace-history.ts!"
       ],
       "project": ["src/**/*.ts!", "src/**/*.tsx!"],
-      "ignoreDependencies": ["@fontsource/inter", "shadcn", "tw-animate-css"],
+      "ignoreDependencies": ["shadcn"],
       "ignore": [
         "src/components/**",
         "src/test/**",
@@ -38,6 +38,11 @@
         "src/**/*.spec.ts",
         "src/**/*.spec.tsx"
       ]
+    },
+    "packages/ui": {
+      "ignoreDependencies": ["@fontsource/inter", "shadcn", "tailwindcss", "tw-animate-css"],
+      "project": ["src/**/*.ts!", "src/**/*.tsx!"],
+      "ignore": ["src/test/**", "src/**/__stories__/**", "src/**/__tests__/**"]
     }
   }
 }

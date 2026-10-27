@@ -1,10 +1,12 @@
 import { Gauge } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@easytrim-editor/ui/button";
+import { cn } from "@easytrim-editor/ui/class-names";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@easytrim-editor/ui/tooltip";
+
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Slider } from "@/components/ui/slider";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import {
@@ -16,7 +18,6 @@ import {
   PLAYBACK_SPEED_STEPS,
   type PlaybackSpeed,
 } from "@/domain/playback-speed";
-import { cn } from "@/lib/class-names.utils";
 
 const PLAYBACK_SPEED_MARKERS = [0.5, 1, 1.5, 2, 3].map((speed) => ({
   value: PLAYBACK_SPEED_STEPS.indexOf(speed as PlaybackSpeed),

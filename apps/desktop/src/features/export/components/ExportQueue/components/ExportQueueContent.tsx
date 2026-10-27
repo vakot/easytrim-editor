@@ -1,8 +1,11 @@
 import { MoreVertical } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Button } from "@easytrim-editor/ui/button";
+import { Card } from "@easytrim-editor/ui/card";
+import { cn } from "@easytrim-editor/ui/class-names";
+import { ScrollArea } from "@easytrim-editor/ui/scroll-area";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,10 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-
-import { cn } from "@/lib/class-names.utils";
 
 import {
   ExportQueueItem,

@@ -4,6 +4,8 @@ import { CheckIcon, ChevronRight } from "lucide-react";
 import { Menubar as MenubarPrimitive } from "radix-ui";
 import * as React from "react";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import {
   gateKeepOpenHandler,
   menuClassNames,
@@ -12,7 +14,6 @@ import {
 } from "@/components/ui/menu";
 
 import { keepMovedFocusOnClose } from "@/components/close-auto-focus";
-import { cn } from "@/lib/class-names.utils";
 
 function Menubar({ className, ...props }: React.ComponentProps<typeof MenubarPrimitive.Root>) {
   return (

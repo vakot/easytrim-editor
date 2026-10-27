@@ -4,8 +4,8 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { useEffect, useMemo, useState } from "react";
 import { Provider } from "react-redux";
 
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Button } from "@easytrim-editor/ui/button";
+import { Card } from "@easytrim-editor/ui/card";
 
 import { AppCommandCenter } from "@/app/components/AppCommandCenter";
 import { AppDialogsProvider } from "@/app/providers/AppDialogsProvider";

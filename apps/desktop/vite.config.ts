@@ -55,7 +55,7 @@ export default defineConfig(({ mode }) => ({
           groups: [
             {
               name: "shared-ui",
-              test: /[\\/]components[\\/]ui[\\/]/,
+              test: /[\\/](?:components[\\/]ui|packages[\\/]ui[\\/]src[\\/]components)[\\/]/,
               minShareCount: 2,
               minSize: 12_000,
               priority: 5,

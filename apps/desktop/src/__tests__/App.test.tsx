@@ -192,7 +192,9 @@ afterEach(() => {
   stopSourceMediaRuntime = undefined;
 });
 
-describe("App", () => {
+// These tests mount the whole application; under the parallel full suite the slowest ones can
+// take several times their isolated ~2s, so the 5s default timeout is too tight.
+describe("App", { timeout: 15_000 }, () => {
   it("keeps the editor visible with the Export Queue only in the workspace toolbar", async () => {
     render(<App />);
     expect(screen.getByRole("banner", { name: "Window title bar" })).toBeInTheDocument();

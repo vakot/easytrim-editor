@@ -3,10 +3,10 @@ import type { ComponentPropsWithoutRef } from "react";
 import { forwardRef } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from "@easytrim-editor/ui/button";
+import { cn } from "@easytrim-editor/ui/class-names";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@easytrim-editor/ui/tooltip";
 
-import { cn } from "@/lib/class-names.utils";
 import { diagnostics } from "@/lib/diagnostics";
 
 import { useAudioTrackController } from "../../../hooks/useAudioTrackController";

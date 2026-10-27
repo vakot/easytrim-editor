@@ -4,7 +4,7 @@ import type { PropsWithChildren, ReactNode } from "react";
 import { Provider } from "react-redux";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { TooltipProvider } from "@easytrim-editor/ui/tooltip";
 
 import { createDefaultEditorSnapshot } from "@/app/store/integration/editor-snapshot";
 import {

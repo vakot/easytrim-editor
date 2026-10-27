@@ -9,8 +9,9 @@ import userEvent from "@testing-library/user-event";
 import { type ReactElement, useRef, useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
+import { TooltipProvider } from "@easytrim-editor/ui/tooltip";
+
 import { ResizablePanelContextProvider } from "@/components/ui/resizable";
-import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { AppUpdatesContext } from "@/app/contexts/app-updates-context";
 import { useWorkspaceViews } from "@/app/contexts/workspace-views-context";
@@ -380,10 +381,10 @@ describe("MenuBarTest", () => {
     const user = userEvent.setup();
     renderMenus();
 
-    const compactMenubar = screen.getAllByRole("menubar")[1];
+    const compactMenubar = screen.getAllByRole("menubar").at(1)!;
     await user.click(within(compactMenubar).getByRole("menuitem", { name: "Application menus" }));
 
-    expect(screen.queryByRole("menuitem", { name: "Edit", exact: true })).not.toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Edit" })).not.toBeInTheDocument();
   });
 
   it("opens the Command Palette from View", async () => {

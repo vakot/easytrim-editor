@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 
-import { KofiIcon } from "@/components/brand-icons";
+import { KofiIcon } from "@easytrim-editor/ui/brand-icons";
+
 import { openExternalUrl } from "@/lib/open-external-url.utils";
 
 const KOFI_URL = "https://ko-fi.com/vakot";

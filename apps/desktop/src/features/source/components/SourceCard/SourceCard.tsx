@@ -1,13 +1,13 @@
 import { cva } from "class-variance-authority";
 import { memo, type ReactNode } from "react";
 
-import { Card } from "@/components/ui/card";
+import { Card } from "@easytrim-editor/ui/card";
+import { cn } from "@easytrim-editor/ui/class-names";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
 import { selectActiveInstanceId } from "@/app/store/slices/editing-instances-slice";
 import { navigateToEditingInstance } from "@/app/store/thunks/source-media-thunks";
 import type { EditingInstanceListEntry } from "@/domain/editing-instance";
-import { cn } from "@/lib/class-names.utils";
 
 import { SourceCardActions } from "./components/SourceCardActions";
 import { SourceCardContextMenu } from "./components/SourceCardContextMenu";

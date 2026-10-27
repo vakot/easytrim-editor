@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { toast } from "sonner";
 
-import { Button } from "../button";
+import { Button } from "@easytrim-editor/ui/button";
+
 import { Toaster } from "../sonner";
 
 type ToastType = "default" | "error" | "info" | "loading" | "success" | "warning";

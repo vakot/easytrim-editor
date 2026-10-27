@@ -3,7 +3,9 @@ import { motion, useReducedMotion } from "motion/react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@easytrim-editor/ui/button";
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import { ButtonGroup } from "@/components/ui/button-group";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import { PopoverAnchor } from "@/components/ui/popover";
@@ -22,7 +24,6 @@ import {
   MediaToolsStatusContent,
   MediaToolsStatusTrigger,
 } from "@/features/media";
-import { cn } from "@/lib/class-names.utils";
 import { preloadOnIntent } from "@/lib/lazy-component";
 
 const preloadCommandPaletteOnIntent = preloadOnIntent(AppCommandPaletteDialog.preload);

@@ -97,6 +97,7 @@ export default defineConfig(
             ["^\\u0000"],
             ["^node:"],
             ["^@?\\w"],
+            ["^@easytrim-editor/ui(?:/|$)"],
             ["^@/components/ui(?:/|$)"],
             ["^@/(?!components/ui(?:/|$))"],
             ["^\\.\\.(?!/?$)", "^\\.\\./?$"],
@@ -200,6 +201,34 @@ export default defineConfig(
     },
   },
   {
+    files: ["packages/ui/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/*", "@easytrim-editor/desktop", "@easytrim-editor/desktop/**"],
+              message: "Shared UI must not depend on desktop application code.",
+            },
+            {
+              group: [
+                "@reduxjs/*",
+                "@tauri-apps/*",
+                "i18next",
+                "react-i18next",
+                "react-redux",
+                "redux-persist",
+              ],
+              message:
+                "Shared UI must stay independent of desktop runtime, state, and localization; accept values through props instead.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ["apps/desktop/src/domain/**/*.{ts,tsx}"],
     rules: {
       "no-restricted-imports": [
@@ -235,7 +264,11 @@ export default defineConfig(
     },
   },
   {
-    files: ["apps/desktop/src/**/*.{ts,tsx}", "apps/desktop/vite.config.ts"],
+    files: [
+      "apps/desktop/src/**/*.{ts,tsx}",
+      "apps/desktop/vite.config.ts",
+      "packages/ui/**/*.{ts,tsx}",
+    ],
     languageOptions: {
       globals: {
         ...globals.browser,
@@ -282,7 +315,28 @@ export default defineConfig(
     },
   },
   {
-    files: ["apps/desktop/src/components/ui/*.tsx"],
+    files: ["packages/ui/src/**/*.{ts,tsx}"],
+    plugins: {
+      tailwindcss,
+    },
+    settings: {
+      tailwindcss: {
+        cssConfigPath: "src/styles/globals.css",
+        functions: ["cn", "cva", "clsx", "twMerge"],
+        parseKeyFunctions: ["clsx"],
+      },
+    },
+    rules: {
+      "tailwindcss/enforces-canonical-classname": "error",
+      "tailwindcss/enforces-negative-arbitrary-values": "error",
+      "tailwindcss/enforces-shorthand": "error",
+      "tailwindcss/important-modifier-suffix": "error",
+      "tailwindcss/no-contradicting-classname": "error",
+      "tailwindcss/no-unnecessary-arbitrary-value": "error",
+    },
+  },
+  {
+    files: ["apps/desktop/src/components/ui/*.tsx", "packages/ui/src/components/*.tsx"],
     rules: {
       "react-refresh/only-export-components": "off",
     },

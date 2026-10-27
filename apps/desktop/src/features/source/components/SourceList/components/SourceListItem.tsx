@@ -1,7 +1,8 @@
 import { MoreVertical } from "lucide-react";
 import { motion } from "motion/react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@easytrim-editor/ui/button";
+
 import { Highlight } from "@/components/ui/highlight";
 
 import type { EditingInstanceListEntry } from "@/domain/editing-instance";

@@ -3,9 +3,11 @@ import { Info } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+import { ScrollArea } from "@easytrim-editor/ui/scroll-area";
+
 import { Item, ItemContent, ItemDescription, ItemMedia } from "@/components/ui/item";
 import { Progress } from "@/components/ui/progress";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { useAppDispatch, useAppSelector } from "@/app/store/redux-hooks";
@@ -19,7 +21,6 @@ import {
 } from "@/app/store/thunks/achievement-thunks";
 import { loadUsageStatistics } from "@/app/store/thunks/usage-statistics-thunks";
 import type { AchievementRecords } from "@/domain/achievement-records";
-import { cn } from "@/lib/class-names.utils";
 
 import { achievementCategories, achievementCollection } from "../../consts/achievements.consts";
 import {

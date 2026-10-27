@@ -2,15 +2,17 @@ import { List, MoreHorizontal, Scissors, Settings2 } from "lucide-react";
 import type { ComponentProps } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Button } from "@easytrim-editor/ui/button";
+import { cn } from "@easytrim-editor/ui/class-names";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@easytrim-editor/ui/tooltip";
+
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 import type { ApplicationShortcut } from "@/app/commands/core/application-command.types";
 import { getShortcutAriaValue } from "@/app/commands/core/application-command.utils";
@@ -29,7 +31,6 @@ import { selectAudioTracks } from "@/app/store/slices/audio-slice";
 import { selectCropApplied, selectTransformApplied } from "@/app/store/slices/crop-slice";
 import { selectExportQueueSummary } from "@/app/store/slices/editing-instances-slice";
 import { selectSourceReady } from "@/app/store/slices/source-slice";
-import { cn } from "@/lib/class-names.utils";
 import { preloadOnIntent } from "@/lib/lazy-component";
 
 import { ExportDialog, ExportDialogTrigger } from "../dialogs/ExportDialog";

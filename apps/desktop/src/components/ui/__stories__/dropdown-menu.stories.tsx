@@ -2,7 +2,8 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { FileIcon } from "lucide-react";
 import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@easytrim-editor/ui/button";
+
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 
 import {

@@ -3,6 +3,8 @@ import "../src/styles/globals.css";
 import type { Decorator, Preview } from "@storybook/react";
 import { type ReactNode, useLayoutEffect } from "react";
 
+import { TooltipProvider } from "@easytrim-editor/ui/tooltip";
+
 import { PRIMARY_COLOR_PRESETS, primaryColorPalette } from "../src/app/theme/theme";
 
 type Theme = "dark" | "light";
@@ -48,8 +50,15 @@ const withDesignTokens: Decorator = (Story, context) => {
   );
 };
 
+// The application root provides one TooltipProvider for every tooltip; mirror that here.
+const withTooltipProvider: Decorator = (Story) => (
+  <TooltipProvider>
+    <Story />
+  </TooltipProvider>
+);
+
 const preview: Preview = {
-  decorators: [withDesignTokens],
+  decorators: [withTooltipProvider, withDesignTokens],
   globalTypes: {
     primaryColor: {
       defaultValue: PRIMARY_COLOR_PRESETS[0].id,

@@ -16,6 +16,12 @@
   "useTabs": false,
   "overrides": [
     {
+      "files": "packages/ui/**",
+      "options": {
+        "tailwindStylesheet": "./packages/ui/src/styles/globals.css"
+      }
+    },
+    {
       "files": "apps/desktop/src/i18n/locales/*.ts",
       "options": {
         "printWidth": 10000

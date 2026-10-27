@@ -2,8 +2,9 @@
 
 import type { ComponentProps, ReactNode } from "react";
 
+import { cn } from "@easytrim-editor/ui/class-names";
+
 import type { SearchMatchRange } from "@/domain/search.types";
-import { cn } from "@/lib/class-names.utils";
 
 function Highlight({
   children,

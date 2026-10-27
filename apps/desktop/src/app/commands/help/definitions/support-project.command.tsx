@@ -1,7 +1,8 @@
 import { useTranslation } from "react-i18next";
 
+import { KofiIcon } from "@easytrim-editor/ui/brand-icons";
+
 import { commandSearchTerms } from "@/app/commands/core/application-command.utils";
-import { KofiIcon } from "@/components/brand-icons";
 import { openExternalUrl } from "@/lib/open-external-url.utils";
 
 function useSupportProjectCommand() {
