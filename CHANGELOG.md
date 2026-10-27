@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- Switching the theme now fades the whole window smoothly instead of changing colors at different speeds.
+
 ### Fixed
 
 - Fixed source files failing to move to Trash on Windows after audio playback, including automatic deletion after rendering.
