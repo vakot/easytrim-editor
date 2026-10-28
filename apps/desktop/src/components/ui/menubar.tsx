@@ -5,6 +5,7 @@ import { Menubar as MenubarPrimitive } from "radix-ui";
 import * as React from "react";
 
 import { cn } from "@easytrim-editor/ui/class-names";
+import { keepMovedFocusOnClose } from "@easytrim-editor/ui/close-auto-focus";
 
 import {
   gateKeepOpenHandler,
@@ -12,8 +13,6 @@ import {
   MenuIcon,
   menuItemVariants,
 } from "@/components/ui/menu";
-
-import { keepMovedFocusOnClose } from "@/components/close-auto-focus";
 
 function Menubar({ className, ...props }: React.ComponentProps<typeof MenubarPrimitive.Root>) {
   return (

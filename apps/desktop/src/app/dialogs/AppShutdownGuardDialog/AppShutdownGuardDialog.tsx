@@ -2,6 +2,8 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
+import { lazyWithPreload } from "@easytrim-editor/ui/lazy-component";
+
 import type { AlertDialogScope } from "@/components/ui/alert-dialog";
 import {
   AlertDialog,
@@ -11,7 +13,6 @@ import {
 
 import { useAppSelector } from "@/app/store/redux-hooks";
 import { selectHasProcessableExports } from "@/app/store/slices/editing-instances-slice";
-import { lazyWithPreload } from "@/lib/lazy-component";
 import {
   completeShutdown,
   listenForWindowCloseRequests,

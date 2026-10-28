@@ -7,7 +7,7 @@ import {
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from "@/components/ui/empty";
+} from "@easytrim-editor/ui/empty";
 
 function ExportQueueEmpty() {
   const { t } = useTranslation();

@@ -8,7 +8,7 @@ import {
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from "@/components/ui/empty";
+} from "@easytrim-editor/ui/empty";
 
 import type { ChangelogCategory, ChangelogRelease } from "../types";
 

@@ -1,10 +1,11 @@
+import { lazyWithPreload } from "@easytrim-editor/ui/lazy-component";
+
 import type {
   AudioFilter,
   AudioFilterType,
   AudioSyncOffset,
   AudioSyncOffsetRange,
 } from "@/domain/audio-processing";
-import { lazyWithPreload } from "@/lib/lazy-component";
 
 type AudioFilterPageProps<T extends AudioFilterType> = {
   filter: Extract<AudioFilter, { type: T }>;

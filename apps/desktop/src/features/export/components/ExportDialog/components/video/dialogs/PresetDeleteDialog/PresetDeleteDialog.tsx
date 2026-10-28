@@ -1,5 +1,7 @@
 import React, { Suspense, useState } from "react";
 
+import { lazyWithPreload, preloadOnIntent } from "@easytrim-editor/ui/lazy-component";
+
 import type { AlertDialogScope } from "@/components/ui/alert-dialog";
 import {
   AlertDialog,
@@ -9,7 +11,6 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import type { ExportPreset } from "@/app/store/lib/export-presets";
-import { lazyWithPreload, preloadOnIntent } from "@/lib/lazy-component";
 
 import { PresetDeleteDialogContext, usePresetDeleteDialog } from "./PresetDeleteDialogContext";
 

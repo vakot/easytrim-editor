@@ -7,11 +7,12 @@ import {
   useState,
 } from "react";
 
+import { lazyWithPreload, preloadOnIntent } from "@easytrim-editor/ui/lazy-component";
+
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
 import { useAppStore } from "@/app/store/redux-hooks";
 import { selectAudioTracks } from "@/app/store/slices/audio-slice";
-import { lazyWithPreload, preloadOnIntent } from "@/lib/lazy-component";
 
 import { AudioFiltersPreloadContext } from "./contexts/audio-filters-preload-context";
 import { useAudioTrackFiltersDialogScope } from "./hooks/useAudioTrackFiltersDialogScope";

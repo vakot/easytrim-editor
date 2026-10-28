@@ -1,14 +1,14 @@
 import type { ReactNode } from "react";
 import { Suspense } from "react";
 
+import { lazyWithPreload, preloadOnIntent } from "@easytrim-editor/ui/lazy-component";
+
 import {
   AlertDialog,
   AlertDialogContent,
   AlertDialogTrigger,
   createAlertDialogScope,
 } from "@/components/ui/alert-dialog";
-
-import { lazyWithPreload, preloadOnIntent } from "@/lib/lazy-component";
 
 import type { SourceCloseDialogContentProps } from "./SourceCloseDialogContent";
 

@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { Suspense, useEffect, useState } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { lazyWithPreload, preloadOnIntent } from "../lazy-component";
+import { lazyWithPreload, preloadOnIntent } from "../lazy-component.utils";
 
 describe("lazyWithPreload", () => {
   it("does not mount closed content and reuses the preloaded module on intent", async () => {

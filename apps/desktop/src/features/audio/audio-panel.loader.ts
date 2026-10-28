@@ -1,4 +1,4 @@
-import { lazyWithPreload, preloadOnIntent } from "@/lib/lazy-component";
+import { lazyWithPreload, preloadOnIntent } from "@easytrim-editor/ui/lazy-component";
 
 const LazyAudioPanel = lazyWithPreload<Record<string, never>>(() =>
   import("./components/AudioPanel").then((module) => ({ default: module.AudioPanel })),

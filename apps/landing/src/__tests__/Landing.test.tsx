@@ -1,23 +1,44 @@
 import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { DOWNLOAD_URL, KOFI_URL, REPOSITORY_URL } from "../consts/links.consts";
+import { KOFI_URL, REPOSITORY_URL } from "../consts/links.consts";
 import { Landing } from "../Landing";
+import { resetVisitor, stubGithub, stubVisitor } from "../test/github.fixtures";
 
 describe("Landing", () => {
-  it("links every download call to action to the latest release", () => {
-    render(<Landing />);
-
-    const downloads = screen.getAllByRole("link", { name: /download/i });
-
-    expect(downloads.length).toBeGreaterThanOrEqual(3);
-    for (const link of downloads) expect(link).toHaveAttribute("href", DOWNLOAD_URL);
+  beforeEach(() => {
+    stubVisitor("windows");
+    stubGithub();
   });
 
-  it("links to the source repository from the header and the hero", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    resetVisitor();
+  });
+
+  it("scrolls to the downloads from the header and the hero", async () => {
     render(<Landing />);
 
-    expect(screen.getByRole("link", { name: "View EasyTrim Editor on GitHub" })).toHaveAttribute(
+    const header = screen.getByRole("banner");
+    expect(within(header).getByRole("link", { name: "Download" })).toHaveAttribute(
+      "href",
+      "#downloads",
+    );
+    expect(screen.getByRole("link", { name: "Download EasyTrim" })).toHaveAttribute(
+      "href",
+      "#downloads",
+    );
+    expect(document.querySelector("#downloads")).toHaveAttribute(
+      "aria-labelledby",
+      "downloads-title",
+    );
+    expect(await screen.findByRole("link", { name: "Download for Windows" })).toBeInTheDocument();
+  });
+
+  it("links to the source repository from the header and the hero", async () => {
+    render(<Landing />);
+
+    expect(await screen.findByRole("link", { name: "GitHub, 1 star" })).toHaveAttribute(
       "href",
       REPOSITORY_URL,
     );

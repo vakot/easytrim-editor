@@ -1,5 +1,7 @@
 import { Suspense } from "react";
 
+import { lazyWithPreload } from "@easytrim-editor/ui/lazy-component";
+
 import type { DialogScope } from "@/components/ui/dialog";
 import { createDialogScope, Dialog, DialogContent } from "@/components/ui/dialog";
 
@@ -14,7 +16,6 @@ import { useCommandPaletteDialog } from "@/app/hooks/useAppDialog";
 import { useApplicationCommands } from "@/app/hooks/useApplicationCommands";
 import { useKeyboardShortcut } from "@/lib/hooks/useKeyboardShortcut";
 import { isApplicationInteractionBlocked } from "@/lib/hotkeys.utils";
-import { lazyWithPreload } from "@/lib/lazy-component";
 
 import type { AppCommandPaletteDialogContentProps } from "./AppCommandPaletteDialogContent";
 

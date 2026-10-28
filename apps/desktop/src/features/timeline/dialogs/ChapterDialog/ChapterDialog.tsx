@@ -1,8 +1,8 @@
 import { type ComponentProps, type ReactNode, Suspense, useState } from "react";
 
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { lazyWithPreload, preloadOnIntent } from "@easytrim-editor/ui/lazy-component";
 
-import { lazyWithPreload, preloadOnIntent } from "@/lib/lazy-component";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
 import { useChapterDialogScope } from "./hooks/useChapterDialogScope";
 import type { ChapterDialogContent } from "./ChapterDialogContent";

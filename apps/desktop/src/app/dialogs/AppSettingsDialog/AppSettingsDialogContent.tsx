@@ -4,6 +4,7 @@ import React, { type ReactNode, Suspense, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { Badge } from "@easytrim-editor/ui/badge";
+import { lazyWithPreload, preloadOnIntent } from "@easytrim-editor/ui/lazy-component";
 import { Separator } from "@easytrim-editor/ui/separator";
 
 import type { DialogScope } from "@/components/ui/dialog";
@@ -20,7 +21,6 @@ import {
   LibraryNavigationItem,
   LibraryPage,
 } from "@/components/library";
-import { lazyWithPreload, preloadOnIntent } from "@/lib/lazy-component";
 
 type SettingsPageId = "general" | "appearance" | "preferences" | "layout" | "about";
 const DEFAULT_PAGE: SettingsPageId = "general";

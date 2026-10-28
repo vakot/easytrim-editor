@@ -1,10 +1,11 @@
 import { Download } from "lucide-react";
 
-import { GithubIcon, KofiIcon } from "@easytrim-editor/ui/brand-icons";
+import { KofiIcon } from "@easytrim-editor/ui/brand-icons";
 import { Button } from "@easytrim-editor/ui/button";
 
-import { DOWNLOAD_URL, KOFI_URL, REPOSITORY_URL } from "../consts/links.consts";
+import { KOFI_URL } from "../consts/links.consts";
 
+import { LandingGithubButton } from "./LandingGithubButton";
 import { LandingThemeSwitch } from "./LandingThemeSwitch";
 
 const sections = [
@@ -57,14 +58,10 @@ function LandingHeader() {
               <KofiIcon className="text-primary" />
             </a>
           </Button>
-          <Button asChild size="icon-lg" variant="ghost">
-            <a aria-label="View EasyTrim Editor on GitHub" href={REPOSITORY_URL}>
-              <GithubIcon />
-            </a>
-          </Button>
+          <LandingGithubButton />
           {/* Icon only on phones, where the header is narrow; the label stays for screen readers. */}
           <Button asChild className="max-sm:w-9 max-sm:px-0" size="lg">
-            <a href={DOWNLOAD_URL} title="Download">
+            <a href="#downloads" title="Download">
               <Download aria-hidden="true" />
               <span className="max-sm:sr-only">Download</span>
             </a>

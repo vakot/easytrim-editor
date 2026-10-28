@@ -1,9 +1,9 @@
 import { KofiIcon } from "@easytrim-editor/ui/brand-icons";
 
-import { DOWNLOAD_URL, KOFI_URL, LICENSE_URL, REPOSITORY_URL } from "../consts/links.consts";
+import { KOFI_URL, LICENSE_URL, RELEASES_URL, REPOSITORY_URL } from "../consts/links.consts";
 
 const links = [
-  { href: DOWNLOAD_URL, label: "Releases" },
+  { href: RELEASES_URL, label: "Releases" },
   { href: REPOSITORY_URL, label: "Source" },
   { href: LICENSE_URL, label: "License" },
 ] as const;

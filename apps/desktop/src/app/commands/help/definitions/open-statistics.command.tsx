@@ -1,10 +1,11 @@
 import { ChartNoAxesCombined } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { preloadOnIntent } from "@easytrim-editor/ui/lazy-component";
+
 import { commandSearchTerms } from "@/app/commands/core/application-command.utils";
 import { AppStatisticsDialog } from "@/app/dialogs/AppStatisticsDialog";
 import { useStatisticsDialog } from "@/app/hooks/useAppDialog";
-import { preloadOnIntent } from "@/lib/lazy-component";
 
 function useOpenStatisticsCommand() {
   const { t } = useTranslation();

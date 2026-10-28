@@ -23,6 +23,11 @@ pnpm --filter @easytrim-editor/landing typecheck
 pnpm --filter @easytrim-editor/landing test
 ```
 
+Sections animate in as they first scroll into view. Spread `reveal` from `src/lib/reveal.utils.ts`
+onto an element to fade it in once per visit; elements that appear together follow one another in
+page order. Visitors who prefer reduced motion, and browsers without `IntersectionObserver`, see
+the content immediately. The styles are at the end of `src/styles/globals.css`.
+
 The site may import only `@easytrim-editor/ui` subpaths, never desktop code, Tauri, Redux, or
 i18n; ESLint enforces this. Copy lives in the components, and the Getting Started achievements
 and loop timing shown in the achievements section are in
@@ -45,7 +50,12 @@ The site is served from the `/easytrim-editor/` project path, set as `base` in `
 Vite prefixes every bundled asset with it. If the repository is renamed or moved to a custom
 domain, update `base` and the absolute canonical and Open Graph URLs in `index.html`.
 
-The download buttons point to `releases/latest`, so a new release needs no site redeploy.
+The downloads section reads the latest release and the star count from the public GitHub API in
+the visitor's browser, so a new release needs no site redeploy. It recommends the installer for the
+visitor's platform and links each one directly from the release. Only `.exe`, `.msi`, `.dmg`,
+`.AppImage`, `.deb`, and `.rpm` assets hosted on this repository's releases are offered (see
+`src/lib/installers.utils.ts`); a platform without one says so. If GitHub cannot be reached, the
+section links to `releases/latest` instead.
 
 ## Update screenshots
 

@@ -1,8 +1,9 @@
+import { lazyWithPreload } from "@easytrim-editor/ui/lazy-component";
+
 import { AppActivityDialog } from "@/app/dialogs/AppActivityDialog";
 import { AppExportQueueDialog } from "@/app/dialogs/AppExportQueueDialog";
 import { AppHistoryDialog } from "@/app/dialogs/AppHistoryDialog";
 import { AppSourcesDialog } from "@/app/dialogs/AppSourcesDialog";
-import { lazyWithPreload } from "@/lib/lazy-component";
 
 import type { SidebarViewId } from "./sidebar-layout";
 

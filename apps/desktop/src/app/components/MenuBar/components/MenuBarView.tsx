@@ -2,6 +2,7 @@ import { Monitor, Moon, Sun, ZoomIn } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@easytrim-editor/ui/button";
+import { preloadOnIntent } from "@easytrim-editor/ui/lazy-component";
 import { PRIMARY_COLOR_PRESETS } from "@easytrim-editor/ui/theme";
 
 import { Kbd } from "@/components/ui/kbd";
@@ -43,7 +44,6 @@ import {
   selectUiScalePercent,
 } from "@/app/store/slices/preferences-slice";
 import { ColorSample } from "@/components/color";
-import { preloadOnIntent } from "@/lib/lazy-component";
 
 const preloadCommandPaletteOnIntent = preloadOnIntent(AppCommandPaletteDialog.preload);
 

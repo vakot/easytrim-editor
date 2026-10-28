@@ -1,9 +1,9 @@
 import React, { Suspense, useState } from "react";
 
+import { lazyWithPreload, preloadOnIntent } from "@easytrim-editor/ui/lazy-component";
+
 import type { DialogScope } from "@/components/ui/dialog";
 import { createDialogScope, Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-
-import { lazyWithPreload, preloadOnIntent } from "@/lib/lazy-component";
 
 import type { PresetEditorRequest } from "./PresetEditorDialogContext";
 import { PresetEditorDialogContext, usePresetEditorDialog } from "./PresetEditorDialogContext";
