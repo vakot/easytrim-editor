@@ -248,7 +248,7 @@ function Recommendation({
       )}
       {platform === "macos" && (
         <p className="max-w-sm text-xs text-muted-foreground">
-          macOS asks you to confirm the first launch. The steps are under macOS below.
+          macOS asks you to confirm the first launch. The steps are in the macOS card below.
         </p>
       )}
     </>
