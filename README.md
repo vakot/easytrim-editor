@@ -3,7 +3,9 @@
 EasyTrim Editor is a fast, lightweight desktop video editor for making precise clips without
 project files.
 
-[![Support EasyTrim Editor on Ko-fi](https://img.shields.io/badge/Support_on-Ko--fi-efbf04?style=for-the-badge&logo=kofi&logoColor=white&labelColor=19191d)](https://ko-fi.com/vakot)
+<p align="center">
+  <a href="https://ko-fi.com/vakot"><img alt="Support EasyTrim Editor on Ko-fi" src="https://img.shields.io/badge/Support_on-Ko--fi-efbf04?style=for-the-badge&logo=kofi&logoColor=white&labelColor=19191d" /></a>
+</p>
 
 ![EasyTrim Editor](apps/desktop/public/image.jpg)
 
