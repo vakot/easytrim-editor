@@ -20,8 +20,8 @@ vi.mock("@/app/store/redux-hooks", () => ({
   useAppSelector: () => shutdownState.hasProcessableExports,
 }));
 vi.mock("@/lib/tauri/window", () => windowActions);
-vi.mock("@/lib/lazy-component", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/lazy-component")>();
+vi.mock("@easytrim-editor/ui/lazy-component", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@easytrim-editor/ui/lazy-component")>();
   const React = await import("react");
 
   return {

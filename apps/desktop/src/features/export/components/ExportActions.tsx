@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Badge } from "@easytrim-editor/ui/badge";
 import { Button } from "@easytrim-editor/ui/button";
 import { cn } from "@easytrim-editor/ui/class-names";
+import { preloadOnIntent } from "@easytrim-editor/ui/lazy-component";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@easytrim-editor/ui/tooltip";
 
 import {
@@ -31,7 +32,6 @@ import { selectAudioTracks } from "@/app/store/slices/audio-slice";
 import { selectCropApplied, selectTransformApplied } from "@/app/store/slices/crop-slice";
 import { selectExportQueueSummary } from "@/app/store/slices/editing-instances-slice";
 import { selectSourceReady } from "@/app/store/slices/source-slice";
-import { preloadOnIntent } from "@/lib/lazy-component";
 
 import { ExportDialog, ExportDialogTrigger } from "../dialogs/ExportDialog";
 

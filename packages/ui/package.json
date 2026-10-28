@@ -22,6 +22,7 @@
     "./galactic-glyphs": "./src/lib/galactic-glyphs.consts.ts",
     "./globals.css": "./src/styles/globals.css",
     "./item": "./src/components/item.tsx",
+    "./lazy-component": "./src/lib/lazy-component.utils.ts",
     "./ping": "./src/components/ping.tsx",
     "./progress": "./src/components/progress.tsx",
     "./ribbon": "./src/components/ribbon.tsx",

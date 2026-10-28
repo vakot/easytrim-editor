@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 
 import { Button } from "@easytrim-editor/ui/button";
 import { cn } from "@easytrim-editor/ui/class-names";
+import { preloadOnIntent } from "@easytrim-editor/ui/lazy-component";
 
 import { ButtonGroup } from "@/components/ui/button-group";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
@@ -24,7 +25,6 @@ import {
   MediaToolsStatusContent,
   MediaToolsStatusTrigger,
 } from "@/features/media";
-import { preloadOnIntent } from "@/lib/lazy-component";
 
 const preloadCommandPaletteOnIntent = preloadOnIntent(AppCommandPaletteDialog.preload);
 

@@ -1,6 +1,6 @@
 import { type PropsWithChildren, useCallback, useMemo, useState } from "react";
 
-import { preloadOnIntent } from "@/lib/lazy-component";
+import { preloadOnIntent } from "@easytrim-editor/ui/lazy-component";
 
 import { SourceDeleteContext, type SourceDeleteRequest } from "./contexts/source-delete-context";
 import { SourceDeleteDialog } from "./dialogs/SourceDeleteDialog";

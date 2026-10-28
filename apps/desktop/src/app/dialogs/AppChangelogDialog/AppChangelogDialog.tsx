@@ -1,5 +1,7 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 
+import { lazyWithPreload } from "@easytrim-editor/ui/lazy-component";
+
 import type { DialogScope } from "@/components/ui/dialog";
 import { createDialogScope, Dialog, DialogContent } from "@/components/ui/dialog";
 
@@ -12,7 +14,6 @@ import {
 import { getAvailableChangelog, getChangelogStartupState } from "@/features/changelog";
 import { CHANGELOG } from "@/generated/changelog";
 import { getCurrentVersion } from "@/lib/app-version.utils";
-import { lazyWithPreload } from "@/lib/lazy-component";
 
 import type { AppChangelogDialogContentProps } from "./AppChangelogDialogContent";
 

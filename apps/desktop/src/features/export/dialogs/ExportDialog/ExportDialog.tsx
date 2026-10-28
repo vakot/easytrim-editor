@@ -10,6 +10,8 @@ import {
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
+import { lazyWithPreload, preloadOnIntent } from "@easytrim-editor/ui/lazy-component";
+
 import type { DialogScope } from "@/components/ui/dialog";
 import { createDialogScope, Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
@@ -20,7 +22,6 @@ import {
   openOptimizedExportDialog,
 } from "@/app/store/thunks/export-thunks";
 import { localizeAppError } from "@/i18n/app-errors";
-import { lazyWithPreload, preloadOnIntent } from "@/lib/lazy-component";
 import type { DiagnosticOrigin } from "@/lib/tauri/diagnostics.types";
 
 import type { ExportDialogContentProps } from "./ExportDialogContent";

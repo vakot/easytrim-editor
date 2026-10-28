@@ -1,13 +1,13 @@
 import { Suspense } from "react";
 
+import { lazyWithPreload } from "@easytrim-editor/ui/lazy-component";
+
 import type { AlertDialogScope } from "@/components/ui/alert-dialog";
 import {
   AlertDialog,
   AlertDialogContent,
   createAlertDialogScope,
 } from "@/components/ui/alert-dialog";
-
-import { lazyWithPreload } from "@/lib/lazy-component";
 
 import type { SourceDeleteDialogContentProps } from "./SourceDeleteDialogContent";
 

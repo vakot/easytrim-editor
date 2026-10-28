@@ -1,5 +1,7 @@
 import { Suspense, useEffect, useState } from "react";
 
+import { lazyWithPreload } from "@easytrim-editor/ui/lazy-component";
+
 import type { AlertDialogScope } from "@/components/ui/alert-dialog";
 import {
   AlertDialog,
@@ -8,7 +10,6 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { diagnostics } from "@/lib/diagnostics";
-import { lazyWithPreload } from "@/lib/lazy-component";
 import type { StartupRecovery } from "@/lib/tauri/diagnostics.types";
 
 const useAppDiagnosticsRecoveryDialogScope = createAlertDialogScope();

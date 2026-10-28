@@ -1,10 +1,11 @@
 import { Suspense } from "react";
 
+import { lazyWithPreload } from "@easytrim-editor/ui/lazy-component";
+
 import type { DialogScope } from "@/components/ui/dialog";
 import { createDialogScope, Dialog, DialogContent } from "@/components/ui/dialog";
 
 import { useAchievementsDialog } from "@/app/hooks/useAppDialog";
-import { lazyWithPreload } from "@/lib/lazy-component";
 
 const useAppAchievementsDialogScope = createDialogScope();
 

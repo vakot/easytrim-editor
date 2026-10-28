@@ -1,10 +1,11 @@
 import { ScrollText } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { preloadOnIntent } from "@easytrim-editor/ui/lazy-component";
+
 import { commandSearchTerms } from "@/app/commands/core/application-command.utils";
 import { AppChangelogDialog } from "@/app/dialogs/AppChangelogDialog";
 import { useChangelogDialog } from "@/app/hooks/useAppDialog";
-import { preloadOnIntent } from "@/lib/lazy-component";
 
 function useOpenChangelogCommand() {
   const { t } = useTranslation();
