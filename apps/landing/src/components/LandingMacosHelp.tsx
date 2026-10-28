@@ -1,15 +1,13 @@
 import { CircleHelp } from "lucide-react";
-import { lazy, Suspense, useRef, useState } from "react";
+import { Suspense, useRef, useState } from "react";
 
 import { Button } from "@easytrim-editor/ui/button";
+import { lazyWithPreload, preloadOnIntent } from "@easytrim-editor/ui/lazy-component";
 
-const loadDialog = () => import("./LandingMacosHelpDialog");
-const LazyDialog = lazy(loadDialog);
+const LazyDialog = lazyWithPreload(() => import("./LandingMacosHelpDialog"));
 
-/** Starts fetching the dialog when a visitor shows interest, so it is ready by the time they click. */
-function preloadDialog() {
-  void loadDialog().catch(() => undefined);
-}
+/** Fetches the dialog when a visitor shows interest, so it opens at once when they click. */
+const preloadDialog = preloadOnIntent(() => LazyDialog.preload());
 
 /**
  * A button that opens the steps for allowing the unsigned macOS app. Few visitors need them, so the
